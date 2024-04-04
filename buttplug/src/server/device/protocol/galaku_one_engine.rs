@@ -84,9 +84,13 @@ fn read_value(data: Vec<u8>) -> u32 {
     }
 }
 
-fn vibrate_command(scalar: u32) -> HardwareWriteCmd {
+fn vibrate_data(scalar: u32) -> Vec<u8> {
     let data: Vec<u32> = vec![90, 0, 0, 1, 49, scalar, 0, 0, 0, 0];
-    return HardwareWriteCmd::new(Endpoint::Tx, send_bytes(data), false);
+    return send_bytes(data);
+}
+
+fn vibrate_command(scalar: u32) -> HardwareWriteCmd {
+    return HardwareWriteCmd::new(Endpoint::Tx, vibrate_data(scalar), false);
 }
 
 generic_protocol_initializer_setup!(GalakuOneEngine, "galaku-one-engine");
@@ -124,24 +128,19 @@ impl ProtocolHandler for GalakuOneEngine {
     }
 
     fn handle_linear_cmd(&self, message: LinearCmd) -> Result<Vec<HardwareCommand>, ButtplugDeviceError> {
-        let device = self.hardware.clone();
-        let vibrate_value_clone = self.vibrate_value.clone();
-        let message_clone = message.clone();
-        tokio::spawn(async move {
-            let mut vibrate_value = vibrate_value_clone.lock().unwrap();
-            for vector in message_clone.vectors() {
-                let step_num = vector.duration() / LINEAR_CONTROL_INTERVAL;
-                let residual_time = vector.duration() % LINEAR_CONTROL_INTERVAL;
-                let step = ((vector.position() * 100f64 - *vibrate_value as f64) / step_num as f64).round() as i32;
-                for i in 0..step_num {
-                    let new_value = (*vibrate_value as i32 + step) as u32;
-                    device.write_value(&vibrate_command(new_value)).await.expect("");
-                    *vibrate_value = new_value;
-                    sleep(Duration::from_millis(if i == step_num - 1 { residual_time as u64 } else { LINEAR_CONTROL_INTERVAL as u64 })).await;
-                }
+        let mut vibrate_value = self.vibrate_value.lock().unwrap();
+        let mut commands = vec![];
+        for vector in message.vectors() {
+            let step_num = vector.duration() / LINEAR_CONTROL_INTERVAL;
+            let step = ((vector.position() * 100f64 - *vibrate_value as f64) / step_num as f64).round() as i32;
+            for _ in 0..step_num {
+                commands.push(
+                    HardwareCommand::Write(vibrate_command((*vibrate_value as i32 + step) as u32))
+                );
             }
-        });
-        self.handle_scalar_vibrate_cmd(message.device_index(), *self.vibrate_value.lock().unwrap())
+            *vibrate_value = (vector.position() * 100f64) as u32;
+        }
+        return Ok(commands.into())
     }
 
     fn handle_sensor_subscribe_cmd(&self, device: Arc<Hardware>, message: SensorSubscribeCmd) -> BoxFuture<Result<ButtplugServerMessage, ButtplugDeviceError>> {

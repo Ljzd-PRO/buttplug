@@ -8208,6 +8208,15 @@
                 ]
               ]
             }
+          ],
+          "LinearCmd": [
+            {
+              "StepRange": [
+                0,
+                100
+              ],
+              "ActuatorType": "Position"
+            }
           ]
         }
       }

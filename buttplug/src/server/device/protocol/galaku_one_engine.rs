@@ -5,21 +5,26 @@
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
+use async_trait::async_trait;
 use futures_util::{future, FutureExt};
 use futures_util::future::BoxFuture;
+use tokio::time::sleep;
 
-use crate::{
-    core::{errors::ButtplugDeviceError, message::Endpoint},
-    server::device::{
-        hardware::{HardwareCommand, HardwareWriteCmd},
-        protocol::{generic_protocol_setup, ProtocolHandler},
-    },
-};
+use crate::{core::{errors::ButtplugDeviceError, message::Endpoint}, generic_protocol_initializer_setup, server::device::{
+    hardware::{HardwareCommand, HardwareWriteCmd},
+    protocol::ProtocolHandler,
+}};
 use crate::core::message;
-use crate::core::message::{ButtplugDeviceMessage, ButtplugMessage, ButtplugServerMessage, SensorReadCmd, SensorReading, SensorSubscribeCmd, SensorType, SensorUnsubscribeCmd};
+use crate::core::message::{ButtplugDeviceMessage, ButtplugMessage, ButtplugServerMessage, LinearCmd, SensorReadCmd, SensorReading, SensorSubscribeCmd, SensorType, SensorUnsubscribeCmd};
+use crate::server::device::configuration::ProtocolDeviceAttributes;
 use crate::server::device::hardware::{Hardware, HardwareEvent, HardwareSubscribeCmd, HardwareUnsubscribeCmd};
+use crate::server::device::protocol::ProtocolAttributesType;
+use crate::server::device::protocol::ProtocolIdentifier;
+use crate::server::device::protocol::ProtocolInitializer;
+use crate::server::ServerDeviceIdentifier;
 
 static KEY_TAB: [[u32; 12]; 4] = [
     [0, 24, 152, 247, 165, 61, 13, 41, 37, 80, 68, 70],
@@ -27,6 +32,8 @@ static KEY_TAB: [[u32; 12]; 4] = [
     [0, 101, 120, 32, 84, 111, 121, 115, 10, 142, 157, 163],
     [0, 197, 214, 231, 248, 10, 50, 32, 111, 98, 13, 10]
 ];
+
+static LINEAR_CONTROL_INTERVAL: u32 = 100;
 
 fn get_tab_key(r: usize, t: usize) -> u32 {
     let e = 3 & r;
@@ -77,10 +84,33 @@ fn read_value(data: Vec<u8>) -> u32 {
     }
 }
 
-generic_protocol_setup!(GalakuOneEngine, "galaku-one-engine");
+fn vibrate_command(scalar: u32) -> HardwareWriteCmd {
+    let data: Vec<u32> = vec![90, 0, 0, 1, 49, scalar, 0, 0, 0, 0];
+    return HardwareWriteCmd::new(Endpoint::Tx, send_bytes(data), false);
+}
+
+generic_protocol_initializer_setup!(GalakuOneEngine, "galaku-one-engine");
 
 #[derive(Default)]
-pub struct GalakuOneEngine {}
+pub struct GalakuOneEngineInitializer {}
+
+#[async_trait]
+impl ProtocolInitializer for GalakuOneEngineInitializer {
+    async fn initialize(&mut self, hardware: Arc<Hardware>, _attributes: &ProtocolDeviceAttributes) -> Result<Arc<dyn ProtocolHandler>, ButtplugDeviceError> {
+        Ok(Arc::new(GalakuOneEngine::new(hardware)))
+    }
+}
+
+pub struct GalakuOneEngine {
+    hardware: Arc<Hardware>,
+    vibrate_value: Arc<Mutex<u32>>,
+}
+
+impl GalakuOneEngine {
+    pub fn new(hardware: Arc<Hardware>) -> Self {
+        Self { hardware, vibrate_value: Arc::new(Mutex::new(0)) }
+    }
+}
 
 impl ProtocolHandler for GalakuOneEngine {
     fn keepalive_strategy(&self) -> super::ProtocolKeepaliveStrategy {
@@ -88,8 +118,30 @@ impl ProtocolHandler for GalakuOneEngine {
     }
 
     fn handle_scalar_vibrate_cmd(&self, _index: u32, scalar: u32) -> Result<Vec<HardwareCommand>, ButtplugDeviceError> {
-        let data: Vec<u32> = vec![90, 0, 0, 1, 49, scalar, 0, 0, 0, 0];
-        Ok(vec![HardwareWriteCmd::new(Endpoint::Tx, send_bytes(data), false).into()])
+        let mut vibrate_value = self.vibrate_value.lock().unwrap();
+        *vibrate_value = scalar;
+        Ok(vec![vibrate_command(scalar).into()])
+    }
+
+    fn handle_linear_cmd(&self, message: LinearCmd) -> Result<Vec<HardwareCommand>, ButtplugDeviceError> {
+        let device = self.hardware.clone();
+        let vibrate_value_clone = self.vibrate_value.clone();
+        let message_clone = message.clone();
+        tokio::spawn(async move {
+            let mut vibrate_value = vibrate_value_clone.lock().unwrap();
+            for vector in message_clone.vectors() {
+                let step_num = vector.duration() / LINEAR_CONTROL_INTERVAL;
+                let residual_time = vector.duration() % LINEAR_CONTROL_INTERVAL;
+                let step = ((vector.position() * 100f64 - *vibrate_value as f64) / step_num as f64).round() as i32;
+                for i in 0..step_num {
+                    let new_value = (*vibrate_value as i32 + step) as u32;
+                    device.write_value(&vibrate_command(new_value)).await.expect("");
+                    *vibrate_value = new_value;
+                    sleep(Duration::from_millis(if i == step_num - 1 { residual_time as u64 } else { LINEAR_CONTROL_INTERVAL as u64 })).await;
+                }
+            }
+        });
+        self.handle_scalar_vibrate_cmd(message.device_index(), *self.vibrate_value.lock().unwrap())
     }
 
     fn handle_sensor_subscribe_cmd(&self, device: Arc<Hardware>, message: SensorSubscribeCmd) -> BoxFuture<Result<ButtplugServerMessage, ButtplugDeviceError>> {

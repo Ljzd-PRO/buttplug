@@ -5,6 +5,11 @@
 - 协议代码文件路径：`buttplug/src/server/device/protocol/dg_lab_v2.rs`
 - 测试用例文件路径：`buttplug/tests/util/device_test/device_test_case/test_dg_lab_v2.yaml`
 
+支持控制 [官方文档](https://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE/blob/main/coyote/v2/README_V2.md) 中描述的
+- 通道强度 `S`
+- 脉冲频率 `Frequency`
+- 脉冲宽度 `Z`
+
 由于 Buttplug 并不适合郊狼这类产品，因此无法并入主分支。
 
 # Buttplug

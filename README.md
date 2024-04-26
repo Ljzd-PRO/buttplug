@@ -38,6 +38,17 @@
   </picture>
 </p>
 
+## 关于该分支
+
+适配了 郊狼2.0 (DG-Lab-V2)
+
+- 协议代码文件路径：`buttplug/src/server/device/protocol/dg_lab_v2.rs`
+- 测试用例文件路径：`buttplug/tests/util/device_test/device_test_case/test_dg_lab_v2.yaml`
+
+由于 Buttplug 并不适合郊狼这类产品，因此无法并入主分支。
+
+## Buttplug
+
 A Rust implementation of the Buttplug Intimate Hardware Control Protocol, including a client and server. This is the core implementation of Buttplug.
 
 This repo is a monorepo with multiple projects, including:

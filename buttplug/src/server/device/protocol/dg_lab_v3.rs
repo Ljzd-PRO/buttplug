@@ -18,7 +18,6 @@ static MAXIMUM_WAVEFORM_STRENGTH: u32 = 100;
 static B0_HEAD: u8 = 0xB0;
 #[allow(dead_code)]
 static BF_HEAD: u8 = 0xBF;
-#[allow(dead_code)]
 static DEFAULT_SERIAL_NO: u8 = 0b0000;
 #[allow(dead_code)]
 static STRENGTH_PARSING_METHOD_NONE: u8 = 0b00;
@@ -49,7 +48,7 @@ fn b0_set_command(
 ) -> Vec<u8> {
     let mut data: Vec<u8> = vec![
         B0_HEAD,
-        STRENGTH_PARSING_METHOD_SET_TO,
+        (DEFAULT_SERIAL_NO << 4) | (STRENGTH_PARSING_METHOD_SET_TO << 2) | STRENGTH_PARSING_METHOD_SET_TO,
         power_a as u8,
         power_b as u8,
     ];

@@ -20,14 +20,10 @@ static B0_HEAD: u8 = 0xB0;
 static BF_HEAD: u8 = 0xBF;
 #[warn(dead_code)]
 static DEFAULT_SERIAL_NO: u8 = 0b0000;
-
-enum StrengthParsingMethod {
-    None = 0b00,
-    Increase = 0b01,
-    Decrease = 0b10,
-    SetTo = 0b11,
-}
-
+static STRENGTH_PARSING_METHOD_NONE: u8 = 0b00;
+static STRENGTH_PARSING_METHOD_INCREASE: u8 = 0b01;
+static STRENGTH_PARSING_METHOD_DECREASE: u8 = 0b10;
+static STRENGTH_PARSING_METHOD_SET_TO: u8 = 0b11;
 
 generic_protocol_setup!(DGLabV3, "dg-lab-v3");
 
@@ -50,7 +46,7 @@ fn b0_set_command(
 ) -> Vec<u8> {
     let mut data: Vec<u8> = vec![
         B0_HEAD,
-        StrengthParsingMethod::SetTo as u8,
+        STRENGTH_PARSING_METHOD_SET_TO,
         power_a as u8,
         power_b as u8,
     ];

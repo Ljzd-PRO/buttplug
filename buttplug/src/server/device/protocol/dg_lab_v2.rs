@@ -79,7 +79,7 @@ impl ProtocolHandler for DGLabV2 {
             match *actuator {
                 // Set power (S)
                 ActuatorType::Vibrate => {
-                    if 0 > scalar || scalar > MAXIMUM_POWER {
+                    if scalar > MAXIMUM_POWER {
                         return Err(
                             ProtocolSpecificError(
                                 "dg-lab-v2".to_owned(),
@@ -131,7 +131,7 @@ impl ProtocolHandler for DGLabV2 {
                 }
                 // Set pulse width (Z)
                 ActuatorType::Inflate => {
-                    if 0 > scalar || scalar > MAXIMUM_PULSE_WIDTH {
+                    if scalar > MAXIMUM_PULSE_WIDTH {
                         return Err(
                             ProtocolSpecificError(
                                 "dg-lab-v2".to_owned(),

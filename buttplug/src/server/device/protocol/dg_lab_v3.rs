@@ -16,7 +16,9 @@ static MAXIMUM_INPUT_FREQUENCY: u32 = 1000;
 static MAXIMUM_POWER: u32 = 200;
 static MAXIMUM_WAVEFORM_STRENGTH: u32 = 100;
 static B0_HEAD: u8 = 0xB0;
+#[warn(dead_code)]
 static BF_HEAD: u8 = 0xBF;
+#[warn(dead_code)]
 static DEFAULT_SERIAL_NO: u8 = 0b0000;
 
 enum StrengthParsingMethod {

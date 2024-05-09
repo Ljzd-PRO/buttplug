@@ -50,7 +50,7 @@ fn b0_set_command(
 ) -> Vec<u8> {
     let mut data: Vec<u8> = vec![
         B0_HEAD,
-        StrengthParsingMethod::SetTo.into(),
+        StrengthParsingMethod::SetTo as u8,
         power_a as u8,
         power_b as u8,
     ];

@@ -245,7 +245,7 @@ impl ServerDevice {
       let keepalive_packet = keepalive_packet.clone();
       async_manager::spawn(async move {
         // Arbitrary wait time for now.
-        let wait_duration = Duration::from_secs(5);
+        let wait_duration = Duration::from_millis(100);
         loop {
           if hardware.time_since_last_write().await > wait_duration {
             match &strategy {

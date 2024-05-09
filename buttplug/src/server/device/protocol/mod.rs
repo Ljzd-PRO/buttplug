@@ -20,6 +20,7 @@ pub mod buttplug_passthru;
 pub mod cachito;
 pub mod cowgirl;
 pub mod dg_lab_v2;
+pub mod dg_lab_v3;
 pub mod foreo;
 pub mod fox;
 pub mod fredorch;
@@ -216,6 +217,10 @@ pub fn get_default_protocol_map() -> HashMap<String, Arc<dyn ProtocolIdentifierF
   add_to_protocol_map(
     &mut map,
     dg_lab_v2::setup::DGLabV2IdentifierFactory::default(),
+  );
+  add_to_protocol_map(
+    &mut map,
+    dg_lab_v3::setup::DGLabV3IdentifierFactory::default(),
   );
   add_to_protocol_map(
     &mut map,

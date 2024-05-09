@@ -9799,6 +9799,86 @@
           ]
         }
       }
+    },
+    "dg-lab-v3": {
+      "btle": {
+        "names": [
+          "47L121000"
+        ],
+        "services": {
+          "0000180c-0000-1000-8000-00805f9b34fb": {
+            "tx": "0000150a-0000-1000-8000-00805f9b34fb",
+            "rx": "0000150b-0000-1000-8000-00805f9b34fb"
+          }
+        }
+      },
+      "defaults": {
+        "name": "Dungeon Lab V3",
+        "messages": {
+          "ScalarCmd": [
+            {
+              "StepRange": [
+                0,
+                200
+              ],
+              "ActuatorType": "Vibrate",
+              "FeatureDescriptor": "Channel A Power"
+            },
+            {
+              "StepRange": [
+                0,
+                200
+              ],
+              "ActuatorType": "Vibrate",
+              "FeatureDescriptor": "Channel B Power"
+            },
+            {
+              "StepRange": [
+                10,
+                1000
+              ],
+              "ActuatorType": "Oscillate",
+              "FeatureDescriptor": "Channel A Frequency"
+            },
+            {
+              "StepRange": [
+                10,
+                1000
+              ],
+              "ActuatorType": "Oscillate",
+              "FeatureDescriptor": "Channel B Frequency"
+            },
+            {
+              "StepRange": [
+                0,
+                100
+              ],
+              "ActuatorType": "Inflate",
+              "FeatureDescriptor": "Channel A Waveform Strength"
+            },
+            {
+              "StepRange": [
+                0,
+                100
+              ],
+              "ActuatorType": "Inflate",
+              "FeatureDescriptor": "Channel B Waveform Strength"
+            }
+          ],
+          "SensorReadCmd": [
+            {
+              "FeatureDescriptor": "Battery Level",
+              "SensorType": "Battery",
+              "SensorRange": [
+                [
+                  0,
+                  100
+                ]
+              ]
+            }
+          ]
+        }
+      }
     }
   }
 }

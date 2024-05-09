@@ -9,7 +9,6 @@ use crate::{core::errors::ButtplugDeviceError, server::device::protocol::{generi
 use crate::core::errors::ButtplugDeviceError::ProtocolSpecificError;
 use crate::core::message::{ActuatorType, Endpoint};
 use crate::server::device::hardware::{HardwareCommand, HardwareWriteCmd};
-use crate::server::device::protocol::ProtocolKeepaliveStrategy;
 
 static MINIMUM_INPUT_FREQUENCY: u32 = 10;
 static MAXIMUM_INPUT_FREQUENCY: u32 = 1000;
@@ -67,8 +66,8 @@ impl ProtocolHandler for DGLabV3 {
         true
     }
 
-    fn keepalive_strategy(&self) -> ProtocolKeepaliveStrategy {
-        ProtocolKeepaliveStrategy::RepeatLastPacketStrategy
+    fn keepalive_strategy(&self) -> super::ProtocolKeepaliveStrategy {
+        super::ProtocolKeepaliveStrategy::RepeatLastPacketStrategy
     }
 
     fn handle_scalar_cmd(&self, commands: &[Option<(ActuatorType, u32)>]) -> Result<Vec<HardwareCommand>, ButtplugDeviceError> {

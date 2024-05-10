@@ -35,11 +35,11 @@ device_commands:
         write_with_response: false
       - !Write
         endpoint: generic0
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
       - !Write
         endpoint: generic1
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
 
   # All A 100%, B 100%
@@ -113,11 +113,11 @@ device_commands:
         write_with_response: false
       - !Write
         endpoint: generic0
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
       - !Write
         endpoint: generic1
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
 
   # Vibrate B 100%
@@ -152,11 +152,11 @@ device_commands:
         write_with_response: false
       - !Write
         endpoint: generic0
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
       - !Write
         endpoint: generic1
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
 
   # Oscillate A 100%
@@ -195,7 +195,7 @@ device_commands:
         write_with_response: false
       - !Write
         endpoint: generic1
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
 
   # Oscillate B 100%
@@ -230,7 +230,7 @@ device_commands:
         write_with_response: false
       - !Write
         endpoint: generic0
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
       - !Write
         endpoint: generic1
@@ -269,11 +269,11 @@ device_commands:
         write_with_response: false
       - !Write
         endpoint: generic0
-        data: [ 0x22, 0x81, 0x0F ]
+        data: [ 0x00, 0x80, 0x0F ]
         write_with_response: false
       - !Write
         endpoint: generic1
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
 
   # Inflate B 100%
@@ -308,11 +308,11 @@ device_commands:
         write_with_response: false
       - !Write
         endpoint: generic0
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
       - !Write
         endpoint: generic1
-        data: [ 0x22, 0x81, 0x0F ]
+        data: [ 0x00, 0x80, 0x0F ]
         write_with_response: false
 
   # Stop
@@ -329,9 +329,9 @@ device_commands:
         write_with_response: false
       - !Write
         endpoint: generic0
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false
       - !Write
         endpoint: generic1
-        data: [ 0x22, 0x01, 0x00 ]
+        data: [ 0x00, 0x00, 0x00 ]
         write_with_response: false

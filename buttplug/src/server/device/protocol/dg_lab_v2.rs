@@ -88,17 +88,17 @@ impl ProtocolHandler for DGLabV2 {
 
     fn handle_scalar_cmd(&self, commands: &[Option<(ActuatorType, u32)>]) -> Result<Vec<HardwareCommand>, ButtplugDeviceError> {
         // Power A (S)
-        let mut power_a_scalar = self.a_scalar.power.clone();
+        let power_a_scalar = self.a_scalar.power.clone();
         // Power B (S)
-        let mut power_b_scalar = self.b_scalar.power.clone();
+        let power_b_scalar = self.b_scalar.power.clone();
         // Frequency A (X, Y)
-        let mut xy_a_scalar = self.a_scalar.xy.clone();
+        let xy_a_scalar = self.a_scalar.xy.clone();
         // Frequency B (X, Y)
-        let mut xy_b_scalar = self.b_scalar.xy.clone();
+        let xy_b_scalar = self.b_scalar.xy.clone();
         // Pulse width A (Z)
-        let mut pulse_width_a_scalar = self.a_scalar.pulse_width.clone();
+        let pulse_width_a_scalar = self.a_scalar.pulse_width.clone();
         // Pulse width B (Z)
-        let mut pulse_width_b_scalar = self.b_scalar.pulse_width.clone();
+        let pulse_width_b_scalar = self.b_scalar.pulse_width.clone();
         for (index, command) in commands.iter().enumerate().filter(|(_, x)| x.is_some()) {
             let (actuator, mut scalar) = command.as_ref().expect("Already verified existence");
             match *actuator {

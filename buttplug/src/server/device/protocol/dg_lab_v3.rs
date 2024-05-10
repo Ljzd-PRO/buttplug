@@ -16,7 +16,6 @@ use crate::core::errors::ButtplugDeviceError::ProtocolSpecificError;
 use crate::core::message::{ActuatorType, Endpoint};
 use crate::server::device::configuration::ProtocolDeviceAttributes;
 use crate::server::device::hardware::{Hardware, HardwareCommand, HardwareWriteCmd};
-use crate::server::device::protocol::ProtocolIdentifier;
 use crate::server::device::protocol::ProtocolInitializer;
 
 static MINIMUM_INPUT_FREQUENCY: u32 = 10;
@@ -72,6 +71,11 @@ struct ChannelScalar {
     waveform_strength: Arc<AtomicU32>,
 }
 
+pub struct DGLabV3 {
+    a_scalar: Arc<ChannelScalar>,
+    b_scalar: Arc<ChannelScalar>,
+}
+
 generic_protocol_initializer_setup!(DGLabV3, "dg-lab-v3");
 
 #[derive(Default)]
@@ -87,11 +91,6 @@ impl ProtocolInitializer for DGLabV3Initializer {
         hardware.set_requires_keepalive();
         Ok(Arc::new(DGLabV3::default()))
     }
-}
-
-pub struct DGLabV3 {
-    a_scalar: Arc<ChannelScalar>,
-    b_scalar: Arc<ChannelScalar>,
 }
 
 impl Default for DGLabV3 {

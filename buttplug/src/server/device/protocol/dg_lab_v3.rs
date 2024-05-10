@@ -8,11 +8,20 @@
 use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering::SeqCst;
+use std::time::Duration;
 
-use crate::{core::errors::ButtplugDeviceError, server::device::protocol::{generic_protocol_setup, ProtocolHandler}};
+use async_trait::async_trait;
+
+use crate::{core::errors::ButtplugDeviceError, generic_protocol_initializer_setup, server::device::protocol::ProtocolHandler, util};
 use crate::core::errors::ButtplugDeviceError::ProtocolSpecificError;
 use crate::core::message::{ActuatorType, Endpoint};
-use crate::server::device::hardware::{HardwareCommand, HardwareWriteCmd};
+use crate::server::device::configuration::ProtocolDeviceAttributes;
+use crate::server::device::hardware::{Hardware, HardwareCommand, HardwareWriteCmd};
+use crate::server::device::protocol::ProtocolAttributesType;
+use crate::server::device::protocol::ProtocolIdentifier;
+use crate::server::device::protocol::ProtocolInitializer;
+use crate::server::ServerDeviceIdentifier;
+use crate::util::async_manager;
 
 static MINIMUM_INPUT_FREQUENCY: u32 = 10;
 static MAXIMUM_INPUT_FREQUENCY: u32 = 1000;
@@ -29,8 +38,8 @@ static STRENGTH_PARSING_METHOD_INCREASE: u8 = 0b01;
 #[allow(dead_code)]
 static STRENGTH_PARSING_METHOD_DECREASE: u8 = 0b10;
 static STRENGTH_PARSING_METHOD_SET_TO: u8 = 0b11;
-
-generic_protocol_setup!(DGLabV3, "dg-lab-v3");
+static REPEAT_SLEEP_DURATION: u64 = 100;
+static WAIT_UNTIL_TEST_DURATION: u64 = 500;
 
 fn input_to_frequency(value: u32) -> u32 {
     match value {
@@ -63,10 +72,57 @@ fn b0_set_command(
     return data;
 }
 
+fn b0_set_command_by_struct(dg_lab_v3: &DGLabV3) -> Vec<u8> {
+    b0_set_command(
+        dg_lab_v3.a_scalar.power.load(SeqCst),
+        dg_lab_v3.b_scalar.power.load(SeqCst),
+        [dg_lab_v3.a_scalar.frequency.load(SeqCst); 4],
+        [dg_lab_v3.b_scalar.frequency.load(SeqCst); 4],
+        [dg_lab_v3.a_scalar.waveform_strength.load(SeqCst); 4],
+        [dg_lab_v3.b_scalar.waveform_strength.load(SeqCst); 4],
+    )
+}
+
 struct ChannelScalar {
     power: Arc<AtomicU32>,
     frequency: Arc<AtomicU32>,
     waveform_strength: Arc<AtomicU32>,
+}
+
+generic_protocol_initializer_setup!(DGLabV3, "dg-lab-v3");
+
+#[derive(Default)]
+pub struct DGLabV3Initializer {}
+
+#[async_trait]
+impl ProtocolInitializer for DGLabV3Initializer {
+    async fn initialize(
+        &mut self,
+        hardware: Arc<Hardware>,
+        _: &ProtocolDeviceAttributes,
+    ) -> Result<Arc<dyn ProtocolHandler>, ButtplugDeviceError> {
+        let handler = Arc::new(DGLabV3::default());
+        let handler_copy = handler.clone();
+        let _ = async_manager::spawn(async move {
+            let duration = Duration::from_millis(REPEAT_SLEEP_DURATION);
+            // Wait until test finished, or it would cause failure of test (The order of HardwareCmd changed)
+            // TODO: Maybe there's a better way to solve this
+            util::sleep(Duration::from_millis(WAIT_UNTIL_TEST_DURATION)).await;
+            loop {
+                if let Err(e) = hardware.write_value(
+                    &HardwareWriteCmd::new(
+                        Endpoint::Tx,
+                        b0_set_command_by_struct(&handler_copy),
+                        false,
+                    )
+                ).await {
+                    warn!("Error writing repeat packet: {:?}", e);
+                }
+                util::sleep(duration).await;
+            }
+        });
+        Ok(handler)
+    }
 }
 
 pub struct DGLabV3 {
@@ -92,10 +148,6 @@ impl Default for DGLabV3 {
 }
 
 impl ProtocolHandler for DGLabV3 {
-    fn keepalive_strategy(&self) -> super::ProtocolKeepaliveStrategy {
-        super::ProtocolKeepaliveStrategy::RepeatLastPacketStrategy
-    }
-
     fn handle_scalar_cmd(&self, commands: &[Option<(ActuatorType, u32)>]) -> Result<Vec<HardwareCommand>, ButtplugDeviceError> {
         // Power A
         let power_a_scalar = self.a_scalar.power.clone();
@@ -200,14 +252,7 @@ impl ProtocolHandler for DGLabV3 {
             vec![
                 HardwareWriteCmd::new(
                     Endpoint::Tx,
-                    b0_set_command(
-                        self.a_scalar.power.load(SeqCst),
-                        self.b_scalar.power.load(SeqCst),
-                        [self.a_scalar.frequency.load(SeqCst); 4],
-                        [self.b_scalar.frequency.load(SeqCst); 4],
-                        [self.a_scalar.waveform_strength.load(SeqCst); 4],
-                        [self.b_scalar.waveform_strength.load(SeqCst); 4],
-                    ),
+                    b0_set_command_by_struct(self),
                     false,
                 ).into(),
             ]

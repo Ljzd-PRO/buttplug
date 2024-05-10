@@ -57,8 +57,8 @@ fn b0_set_command(
         power_b as u8,
     ];
     data.extend(frequency_a.iter().map(|&x| x as u8));
-    data.extend(frequency_b.iter().map(|&x| x as u8));
     data.extend(waveform_strength_a.iter().map(|&x| x as u8));
+    data.extend(frequency_b.iter().map(|&x| x as u8));
     data.extend(waveform_strength_b.iter().map(|&x| x as u8));
     return data;
 }

@@ -9,10 +9,14 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering::SeqCst;
 
-use crate::{core::errors::ButtplugDeviceError, server::device::protocol::{generic_protocol_setup, ProtocolHandler}};
+use async_trait::async_trait;
+
+use crate::{core::errors::ButtplugDeviceError, generic_protocol_initializer_setup, server::device::protocol::ProtocolHandler};
 use crate::core::errors::ButtplugDeviceError::ProtocolSpecificError;
 use crate::core::message::{ActuatorType, Endpoint};
-use crate::server::device::hardware::{HardwareCommand, HardwareWriteCmd};
+use crate::server::device::configuration::ProtocolDeviceAttributes;
+use crate::server::device::hardware::{Hardware, HardwareCommand, HardwareWriteCmd};
+use crate::server::device::protocol::ProtocolInitializer;
 
 static MINIMUM_INPUT_FREQUENCY: u32 = 10;
 static MAXIMUM_INPUT_FREQUENCY: u32 = 1000;
@@ -29,8 +33,6 @@ static STRENGTH_PARSING_METHOD_INCREASE: u8 = 0b01;
 #[allow(dead_code)]
 static STRENGTH_PARSING_METHOD_DECREASE: u8 = 0b10;
 static STRENGTH_PARSING_METHOD_SET_TO: u8 = 0b11;
-
-generic_protocol_setup!(DGLabV3, "dg-lab-v3");
 
 fn input_to_frequency(value: u32) -> u32 {
     match value {
@@ -72,6 +74,23 @@ struct ChannelScalar {
 pub struct DGLabV3 {
     a_scalar: Arc<ChannelScalar>,
     b_scalar: Arc<ChannelScalar>,
+}
+
+generic_protocol_initializer_setup!(DGLabV3, "dg-lab-v3");
+
+#[derive(Default)]
+pub struct DGLabV3Initializer {}
+
+#[async_trait]
+impl ProtocolInitializer for DGLabV3Initializer {
+    async fn initialize(
+        &mut self,
+        mut hardware: Arc<Hardware>,
+        _: &ProtocolDeviceAttributes,
+    ) -> Result<Arc<dyn ProtocolHandler>, ButtplugDeviceError> {
+        hardware.set_requires_keepalive();
+        Ok(Arc::new(DGLabV3::default()))
+    }
 }
 
 impl Default for DGLabV3 {

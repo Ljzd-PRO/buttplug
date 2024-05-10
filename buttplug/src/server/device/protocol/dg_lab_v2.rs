@@ -33,6 +33,14 @@ fn ab_power_to_byte(a: u32, b: u32) -> Vec<u8> {
     ];
 }
 
+fn frequency_to_xy(frequency: u32) -> (u32, u32) {
+    let mut x = (frequency as f32 / 1000f32).sqrt() * 15f32;
+    let mut y = frequency as f32 - x;
+    if x > MAXIMUM_X { x = MAXIMUM_X }
+    if y > MAXIMUM_Y { y = MAXIMUM_Y }
+    return (x.round() as u32, y.round() as u32);
+}
+
 /// XXXX XYYY YYYY YYYZ ZZZZ 0000
 fn xyz_to_bytes(x: u32, y: u32, z: u32) -> Vec<u8> {
     let data = 0 | ((z & 0x1F) << 15) | ((y & 0x3FF) << 5) | (x & 0x1F);
@@ -42,16 +50,6 @@ fn xyz_to_bytes(x: u32, y: u32, z: u32) -> Vec<u8> {
         ((data >> 16) & 0xFF) as u8,
     ];
 }
-
-fn frequency_to_xy(frequency: u32) -> (u32, u32) {
-    let mut x = (frequency as f32 / 1000f32).sqrt() * 15f32;
-    let mut y = frequency as f32 - x;
-    if x > MAXIMUM_X { x = MAXIMUM_X }
-    if y > MAXIMUM_Y { y = MAXIMUM_Y }
-    return (x.round() as u32, y.round() as u32);
-}
-
-generic_protocol_setup!(DGLabV2, "dg-lab-v2");
 
 struct ChannelScalar {
     power: Arc<AtomicU32>,
@@ -63,6 +61,8 @@ pub struct DGLabV2 {
     a_scalar: Arc<ChannelScalar>,
     b_scalar: Arc<ChannelScalar>,
 }
+
+generic_protocol_setup!(DGLabV2, "dg-lab-v2");
 
 impl Default for DGLabV2 {
     fn default() -> Self {

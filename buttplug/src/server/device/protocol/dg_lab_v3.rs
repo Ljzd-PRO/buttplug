@@ -5,6 +5,10 @@
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
 
+use std::sync::Arc;
+use std::sync::atomic::AtomicU32;
+use std::sync::atomic::Ordering::SeqCst;
+
 use crate::{core::errors::ButtplugDeviceError, server::device::protocol::{generic_protocol_setup, ProtocolHandler}};
 use crate::core::errors::ButtplugDeviceError::ProtocolSpecificError;
 use crate::core::message::{ActuatorType, Endpoint};
@@ -58,31 +62,52 @@ fn b0_set_command(
     return data;
 }
 
-#[derive(Default)]
-pub struct DGLabV3 {}
+struct ChannelScalar {
+    power: Arc<AtomicU32>,
+    frequency: Arc<AtomicU32>,
+    waveform_strength: Arc<AtomicU32>,
+}
+
+pub struct DGLabV3 {
+    a_scalar: Arc<ChannelScalar>,
+    b_scalar: Arc<ChannelScalar>,
+}
+
+impl Default for DGLabV3 {
+    fn default() -> Self {
+        Self {
+            a_scalar: Arc::new(ChannelScalar {
+                power: Arc::new(Default::default()),
+                frequency: Arc::new(Default::default()),
+                waveform_strength: Arc::new(Default::default()),
+            }),
+            b_scalar: Arc::new(ChannelScalar {
+                power: Arc::new(Default::default()),
+                frequency: Arc::new(Default::default()),
+                waveform_strength: Arc::new(Default::default()),
+            }),
+        }
+    }
+}
 
 impl ProtocolHandler for DGLabV3 {
-    fn needs_full_command_set(&self) -> bool {
-        true
-    }
-
     fn keepalive_strategy(&self) -> super::ProtocolKeepaliveStrategy {
         super::ProtocolKeepaliveStrategy::RepeatLastPacketStrategy
     }
 
     fn handle_scalar_cmd(&self, commands: &[Option<(ActuatorType, u32)>]) -> Result<Vec<HardwareCommand>, ButtplugDeviceError> {
         // Power A
-        let mut power_a_scalar: u32 = 0;
+        let mut power_a_scalar = self.a_scalar.power.clone();
         // Power B
-        let mut power_b_scalar: u32 = 0;
+        let mut power_b_scalar = self.b_scalar.power.clone();
         // Frequency A
-        let mut frequency_a_scalar: u32 = 0;
+        let mut frequency_a_scalar = self.a_scalar.frequency.clone();
         // Frequency B
-        let mut frequency_b_scalar: u32 = 0;
+        let mut frequency_b_scalar = self.b_scalar.frequency.clone();
         // Waveform strength A
-        let mut waveform_strength_a_scalar: u32 = 0;
+        let mut waveform_strength_a_scalar = self.a_scalar.waveform_strength.clone();
         // Waveform strength B
-        let mut waveform_strength_b_scalar: u32 = 0;
+        let mut waveform_strength_b_scalar = self.b_scalar.waveform_strength.clone();
         for (index, command) in commands.iter().enumerate().filter(|(_, x)| x.is_some()) {
             let (actuator, mut scalar) = command.as_ref().expect("Already verified existence");
             match *actuator {
@@ -98,9 +123,9 @@ impl ProtocolHandler for DGLabV3 {
                     }
                     match index {
                         // Channel A
-                        0 => { power_a_scalar = scalar; }
+                        0 => { power_a_scalar.store(scalar, SeqCst); }
                         // Channel B
-                        1 => { power_b_scalar = scalar; }
+                        1 => { power_b_scalar.store(scalar, SeqCst); }
                         _ => {
                             return Err(
                                 ProtocolSpecificError(
@@ -113,7 +138,7 @@ impl ProtocolHandler for DGLabV3 {
                 }
                 // Set frequency (X, Y)
                 ActuatorType::Oscillate => {
-                     if scalar != 0 && (scalar < MINIMUM_INPUT_FREQUENCY || scalar > MAXIMUM_INPUT_FREQUENCY) {
+                    if scalar != 0 && (scalar < MINIMUM_INPUT_FREQUENCY || scalar > MAXIMUM_INPUT_FREQUENCY) {
                         return Err(
                             ProtocolSpecificError(
                                 "dg-lab-v3".to_owned(),
@@ -123,9 +148,9 @@ impl ProtocolHandler for DGLabV3 {
                     }
                     match index {
                         // Channel A
-                        2 => { frequency_a_scalar = input_to_frequency(scalar); }
+                        2 => { frequency_a_scalar.store(input_to_frequency(scalar), SeqCst); }
                         // Channel B
-                        3 => { frequency_b_scalar = input_to_frequency(scalar); }
+                        3 => { frequency_b_scalar.store(input_to_frequency(scalar), SeqCst); }
                         _ => {
                             return Err(
                                 ProtocolSpecificError(
@@ -148,9 +173,9 @@ impl ProtocolHandler for DGLabV3 {
                     }
                     match index {
                         // Channel A
-                        4 => { waveform_strength_a_scalar = scalar; }
+                        4 => { waveform_strength_a_scalar.store(scalar, SeqCst); }
                         // Channel B
-                        5 => { waveform_strength_b_scalar = scalar; }
+                        5 => { waveform_strength_b_scalar.store(scalar, SeqCst); }
                         _ => {
                             return Err(
                                 ProtocolSpecificError(
@@ -173,12 +198,12 @@ impl ProtocolHandler for DGLabV3 {
                 HardwareWriteCmd::new(
                     Endpoint::Tx,
                     b0_set_command(
-                        power_a_scalar,
-                        power_b_scalar,
-                        [frequency_a_scalar; 4],
-                        [frequency_b_scalar; 4],
-                        [waveform_strength_a_scalar; 4],
-                        [waveform_strength_b_scalar; 4],
+                        self.a_scalar.power.load(SeqCst),
+                        self.b_scalar.power.load(SeqCst),
+                        [self.a_scalar.frequency.load(SeqCst); 4],
+                        [self.b_scalar.frequency.load(SeqCst); 4],
+                        [self.a_scalar.waveform_strength.load(SeqCst); 4],
+                        [self.b_scalar.waveform_strength.load(SeqCst); 4],
                     ),
                     false,
                 ).into(),

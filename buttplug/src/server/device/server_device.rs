@@ -234,7 +234,9 @@ impl ServerDevice {
     let keepalive_packet = Arc::new(RwLock::new(None));
     let gcm = GenericCommandManager::new(attributes);
     // If we've gotten here, we know our hardware is connected. This means we can start the keepalive if it's required.
-    if (hardware.requires_keepalive() || identifier.protocol == "DGLabV2" || identifier.protocol == "DGLabV3")
+    let is_dg_lab_device = identifier.attributes_identifier == ProtocolAttributesType::Identifier("DGLabV2".to_owned()) ||
+        identifier.attributes_identifier == ProtocolAttributesType::Identifier("DGLabV3".to_owned());
+    if (hardware.requires_keepalive() || is_dg_lab_device)
       && !matches!(
         handler.keepalive_strategy(),
         ProtocolKeepaliveStrategy::NoStrategy
@@ -246,7 +248,7 @@ impl ServerDevice {
       let identifier = identifier.clone();
       async_manager::spawn(async move {
         // Arbitrary wait time for now.
-        let wait_duration = if identifier.protocol == "DGLabV2" || identifier.protocol == "DGLabV3" {
+        let wait_duration = if is_dg_lab_device {
           Duration::from_millis(100)
         } else {
           Duration::from_secs(5)

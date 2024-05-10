@@ -83,6 +83,7 @@ fn b0_set_command_by_struct(dg_lab_v3: &DGLabV3) -> Vec<u8> {
     )
 }
 
+#[derive(Default)]
 struct ChannelScalar {
     power: Arc<AtomicU32>,
     frequency: Arc<AtomicU32>,
@@ -125,26 +126,10 @@ impl ProtocolInitializer for DGLabV3Initializer {
     }
 }
 
+#[derive(Default)]
 pub struct DGLabV3 {
     a_scalar: Arc<ChannelScalar>,
     b_scalar: Arc<ChannelScalar>,
-}
-
-impl Default for DGLabV3 {
-    fn default() -> Self {
-        Self {
-            a_scalar: Arc::new(ChannelScalar {
-                power: Arc::new(Default::default()),
-                frequency: Arc::new(Default::default()),
-                waveform_strength: Arc::new(Default::default()),
-            }),
-            b_scalar: Arc::new(ChannelScalar {
-                power: Arc::new(Default::default()),
-                frequency: Arc::new(Default::default()),
-                waveform_strength: Arc::new(Default::default()),
-            }),
-        }
-    }
 }
 
 impl ProtocolHandler for DGLabV3 {

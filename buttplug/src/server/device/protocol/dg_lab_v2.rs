@@ -5,6 +5,10 @@
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
 
+use std::sync::Arc;
+use std::sync::atomic::AtomicU32;
+use std::sync::atomic::Ordering::SeqCst;
+
 use crate::{core::errors::ButtplugDeviceError, server::device::protocol::{generic_protocol_setup, ProtocolHandler}};
 use crate::core::errors::ButtplugDeviceError::ProtocolSpecificError;
 use crate::core::message::{ActuatorType, Endpoint};
@@ -49,31 +53,52 @@ fn frequency_to_xy(frequency: u32) -> (u32, u32) {
 
 generic_protocol_setup!(DGLabV2, "dg-lab-v2");
 
-#[derive(Default)]
-pub struct DGLabV2 {}
+struct ChannelScalar {
+    power: Arc<AtomicU32>,
+    xy: Arc<(AtomicU32, AtomicU32)>,
+    pulse_width: Arc<AtomicU32>,
+}
+
+pub struct DGLabV2 {
+    a_scalar: Arc<ChannelScalar>,
+    b_scalar: Arc<ChannelScalar>,
+}
+
+impl Default for DGLabV2 {
+    fn default() -> Self {
+        Self {
+            a_scalar: Arc::new(ChannelScalar {
+                power: Arc::new(Default::default()),
+                xy: Arc::new((Default::default(), Default::default())),
+                pulse_width: Arc::new(Default::default()),
+            }),
+            b_scalar: Arc::new(ChannelScalar {
+                power: Arc::new(Default::default()),
+                xy: Arc::new((Default::default(), Default::default())),
+                pulse_width: Arc::new(Default::default()),
+            }),
+        }
+    }
+}
 
 impl ProtocolHandler for DGLabV2 {
-    fn needs_full_command_set(&self) -> bool {
-        true
-    }
-
     fn keepalive_strategy(&self) -> ProtocolKeepaliveStrategy {
         ProtocolKeepaliveStrategy::RepeatLastPacketStrategy
     }
 
     fn handle_scalar_cmd(&self, commands: &[Option<(ActuatorType, u32)>]) -> Result<Vec<HardwareCommand>, ButtplugDeviceError> {
         // Power A (S)
-        let mut power_a_scalar: u32 = 0;
+        let mut power_a_scalar = self.a_scalar.power.clone();
         // Power B (S)
-        let mut power_b_scalar: u32 = 0;
+        let mut power_b_scalar = self.b_scalar.power.clone();
         // Frequency A (X, Y)
-        let mut xy_a_scalar: (u32, u32) = (0, 0);
+        let mut xy_a_scalar = self.a_scalar.xy.clone();
         // Frequency B (X, Y)
-        let mut xy_b_scalar: (u32, u32) = (0, 0);
+        let mut xy_b_scalar = self.b_scalar.xy.clone();
         // Pulse width A (Z)
-        let mut pulse_width_a_scalar: u32 = 0;
+        let mut pulse_width_a_scalar = self.a_scalar.pulse_width.clone();
         // Pulse width B (Z)
-        let mut pulse_width_b_scalar: u32 = 0;
+        let mut pulse_width_b_scalar = self.b_scalar.pulse_width.clone();
         for (index, command) in commands.iter().enumerate().filter(|(_, x)| x.is_some()) {
             let (actuator, mut scalar) = command.as_ref().expect("Already verified existence");
             match *actuator {
@@ -89,9 +114,9 @@ impl ProtocolHandler for DGLabV2 {
                     }
                     match index {
                         // Channel A
-                        0 => { power_a_scalar = scalar; }
+                        0 => { power_a_scalar.store(scalar, SeqCst); }
                         // Channel B
-                        1 => { power_b_scalar = scalar; }
+                        1 => { power_b_scalar.store(scalar, SeqCst); }
                         _ => {
                             return Err(
                                 ProtocolSpecificError(
@@ -114,9 +139,17 @@ impl ProtocolHandler for DGLabV2 {
                     }
                     match index {
                         // Channel A
-                        2 => { xy_a_scalar = frequency_to_xy(scalar); }
+                        2 => {
+                            let (x_scalar, y_scalar) = frequency_to_xy(scalar);
+                            xy_a_scalar.0.store(x_scalar, SeqCst);
+                            xy_a_scalar.1.store(y_scalar, SeqCst);
+                        }
                         // Channel B
-                        3 => { xy_b_scalar = frequency_to_xy(scalar); }
+                        3 => {
+                            let (x_scalar, y_scalar) = frequency_to_xy(scalar);
+                            xy_b_scalar.0.store(x_scalar, SeqCst);
+                            xy_b_scalar.1.store(y_scalar, SeqCst);
+                        }
                         _ => {
                             return Err(
                                 ProtocolSpecificError(
@@ -139,9 +172,9 @@ impl ProtocolHandler for DGLabV2 {
                     }
                     match index {
                         // Channel A
-                        4 => { pulse_width_a_scalar = scalar; }
+                        4 => { pulse_width_a_scalar.store(scalar, SeqCst); }
                         // Channel B
-                        5 => { pulse_width_b_scalar = scalar; }
+                        5 => { pulse_width_b_scalar.store(scalar, SeqCst); }
                         _ => {
                             return Err(
                                 ProtocolSpecificError(
@@ -163,17 +196,28 @@ impl ProtocolHandler for DGLabV2 {
             vec![
                 HardwareWriteCmd::new(
                     Endpoint::Tx,
-                    ab_power_to_byte(power_a_scalar, power_b_scalar),
+                    ab_power_to_byte(
+                        self.a_scalar.power.load(SeqCst),
+                        self.b_scalar.power.load(SeqCst),
+                    ),
                     false,
                 ).into(),
                 HardwareWriteCmd::new(
                     Endpoint::Generic0,
-                    xyz_to_bytes(xy_a_scalar.0, xy_a_scalar.1, pulse_width_a_scalar),
+                    xyz_to_bytes(
+                        self.a_scalar.xy.0.load(SeqCst),
+                        self.a_scalar.xy.1.load(SeqCst),
+                        self.a_scalar.pulse_width.load(SeqCst),
+                    ),
                     false,
                 ).into(),
                 HardwareWriteCmd::new(
                     Endpoint::Generic1,
-                    xyz_to_bytes(xy_b_scalar.0, xy_b_scalar.1, pulse_width_b_scalar),
+                    xyz_to_bytes(
+                        self.b_scalar.xy.0.load(SeqCst),
+                        self.b_scalar.xy.1.load(SeqCst),
+                        self.b_scalar.pulse_width.load(SeqCst),
+                    ),
                     false,
                 ).into(),
             ]

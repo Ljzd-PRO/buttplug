@@ -1,16 +1,25 @@
 ## 关于该分支
 
-适配了 郊狼2.0 (DG-Lab-V2)
+适配 郊狼 2.0, 3.0 (DG-Lab-V2, DG-Lab-V3)
 
-- 协议代码文件路径：`buttplug/src/server/device/protocol/dg_lab_v2.rs`
-- 测试用例文件路径：`buttplug/tests/util/device_test/device_test_case/test_dg_lab_v2.yaml`
-
-支持控制 [官方文档](https://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE/blob/main/coyote/v2/README_V2.md) 中描述的
+郊狼 2.0 支持控制 [官方文档](https://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE/blob/main/coyote/v2/README_V2.md) 中描述的
 - 通道强度 `S`
 - 脉冲频率 `Frequency`
 - 脉冲宽度 `Z`
 
+郊狼 3.0 支持控制 [官方文档](https://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE/blob/main/coyote/v3/README_V3.md) 中描述的
+- 通道强度
+- 波形频率
+- 波形强度
+
 由于 Buttplug 并不适合郊狼这类产品，因此无法并入主分支。
+
+### 主要代码
+
+- [buttplug/src/server/device/protocol/dg_lab_v2.rs](buttplug/src/server/device/protocol/dg_lab_v2.rs)
+- [buttplug/src/server/device/protocol/dg_lab_v2.rs](buttplug/src/server/device/protocol/dg_lab_v3.rs)
+- [buttplug/buttplug-device-config/buttplug-device-config.json](buttplug/buttplug-device-config/buttplug-device-config.json)
+- [buttplug/buttplug-device-config/buttplug-device-config.yml](buttplug/buttplug-device-config/buttplug-device-config.yml)
 
 # Buttplug
 [![Patreon donate button](https://img.shields.io/badge/patreon-donate-yellow.svg)](https://www.patreon.com/qdot)

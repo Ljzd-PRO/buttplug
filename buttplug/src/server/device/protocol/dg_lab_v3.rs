@@ -139,7 +139,7 @@ impl ProtocolHandler for DGLabV3 {
                 }
                 // Set frequency (X, Y)
                 ActuatorType::Oscillate => {
-                    if scalar == 9 {
+                    if scalar == MINIMUM_INPUT_FREQUENCY - 1 {
                         scalar = 0;
                     } else if scalar != 0 && (scalar < MINIMUM_INPUT_FREQUENCY || scalar > MAXIMUM_INPUT_FREQUENCY) {
                         return Err(

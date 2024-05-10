@@ -92,12 +92,14 @@ fn commands_vec_by_struct(dg_lab_v2: &DGLabV2) -> Vec<HardwareWriteCmd> {
     ]
 }
 
+#[derive(Default)]
 struct ChannelScalar {
     power: Arc<AtomicU32>,
     xy: Arc<(AtomicU32, AtomicU32)>,
     pulse_width: Arc<AtomicU32>,
 }
 
+#[derive(Default)]
 pub struct DGLabV2 {
     a_scalar: Arc<ChannelScalar>,
     b_scalar: Arc<ChannelScalar>,
@@ -132,23 +134,6 @@ impl ProtocolInitializer for DGLabV2Initializer {
             }
         });
         Ok(handler)
-    }
-}
-
-impl Default for DGLabV2 {
-    fn default() -> Self {
-        Self {
-            a_scalar: Arc::new(ChannelScalar {
-                power: Arc::new(Default::default()),
-                xy: Arc::new((Default::default(), Default::default())),
-                pulse_width: Arc::new(Default::default()),
-            }),
-            b_scalar: Arc::new(ChannelScalar {
-                power: Arc::new(Default::default()),
-                xy: Arc::new((Default::default(), Default::default())),
-                pulse_width: Arc::new(Default::default()),
-            }),
-        }
     }
 }
 

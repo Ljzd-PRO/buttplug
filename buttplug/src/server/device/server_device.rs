@@ -245,7 +245,6 @@ impl ServerDevice {
       let hardware = hardware.clone();
       let strategy = handler.keepalive_strategy();
       let keepalive_packet = keepalive_packet.clone();
-      let identifier = identifier.clone();
       async_manager::spawn(async move {
         // Arbitrary wait time for now.
         let wait_duration = if is_dg_lab_device {

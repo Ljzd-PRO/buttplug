@@ -261,7 +261,7 @@ impl Hardware {
       address: address.to_owned(),
       endpoints: endpoints.into(),
       internal_impl,
-      requires_keepalive: false,
+      requires_keepalive: true,
       last_write_time: Arc::new(RwLock::new(Instant::now())),
     }
   }

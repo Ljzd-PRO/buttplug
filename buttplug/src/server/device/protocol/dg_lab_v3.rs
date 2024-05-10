@@ -34,6 +34,7 @@ generic_protocol_setup!(DGLabV3, "dg-lab-v3");
 
 fn input_to_frequency(value: u32) -> u32 {
     match value {
+        0 => value,
         10..=100 => value,
         101..=600 => (value - 100) / 5 + 100,
         601..=1000 => (value - 600) / 10 + 200,
@@ -138,7 +139,9 @@ impl ProtocolHandler for DGLabV3 {
                 }
                 // Set frequency (X, Y)
                 ActuatorType::Oscillate => {
-                    if scalar != 0 && (scalar < MINIMUM_INPUT_FREQUENCY || scalar > MAXIMUM_INPUT_FREQUENCY) {
+                    if scalar == 9 {
+                        scalar = 0;
+                    } else if scalar != 0 && (scalar < MINIMUM_INPUT_FREQUENCY || scalar > MAXIMUM_INPUT_FREQUENCY) {
                         return Err(
                             ProtocolSpecificError(
                                 "dg-lab-v3".to_owned(),

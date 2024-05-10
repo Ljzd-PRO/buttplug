@@ -8,12 +8,20 @@
 use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering::SeqCst;
+use std::time::Duration;
 
-use crate::{core::errors::ButtplugDeviceError, server::device::protocol::{generic_protocol_setup, ProtocolHandler}};
+use async_trait::async_trait;
+
+use crate::{core::errors::ButtplugDeviceError, generic_protocol_initializer_setup, server::device::protocol::ProtocolHandler, util};
 use crate::core::errors::ButtplugDeviceError::ProtocolSpecificError;
 use crate::core::message::{ActuatorType, Endpoint};
-use crate::server::device::hardware::{HardwareCommand, HardwareWriteCmd};
-use crate::server::device::protocol::ProtocolKeepaliveStrategy;
+use crate::server::device::configuration::ProtocolDeviceAttributes;
+use crate::server::device::hardware::{Hardware, HardwareCommand, HardwareWriteCmd};
+use crate::server::device::protocol::ProtocolAttributesType;
+use crate::server::device::protocol::ProtocolIdentifier;
+use crate::server::device::protocol::ProtocolInitializer;
+use crate::server::ServerDeviceIdentifier;
+use crate::util::async_manager;
 
 static MINIMUM_FREQUENCY: u32 = 10;
 static MAXIMUM_FREQUENCY: u32 = 1000;
@@ -21,6 +29,8 @@ static MAXIMUM_POWER: u32 = 2047;
 static MAXIMUM_PULSE_WIDTH: u32 = 31;
 static MAXIMUM_X: f32 = 31f32;
 static MAXIMUM_Y: f32 = 1023f32;
+static REPEAT_SLEEP_DURATION: u64 = 100;
+static WAIT_UNTIL_TEST_DURATION: u64 = 500;
 
 
 /// AAAA AAAA AAAB BBBB BBBB BB00
@@ -51,6 +61,37 @@ fn xyz_to_bytes(x: u32, y: u32, z: u32) -> Vec<u8> {
     ];
 }
 
+fn commands_vec_by_struct(dg_lab_v2: &DGLabV2) -> Vec<HardwareWriteCmd> {
+    vec![
+        HardwareWriteCmd::new(
+            Endpoint::Tx,
+            ab_power_to_byte(
+                dg_lab_v2.a_scalar.power.load(SeqCst),
+                dg_lab_v2.b_scalar.power.load(SeqCst),
+            ),
+            false,
+        ),
+        HardwareWriteCmd::new(
+            Endpoint::Generic0,
+            xyz_to_bytes(
+                dg_lab_v2.a_scalar.xy.0.load(SeqCst),
+                dg_lab_v2.a_scalar.xy.1.load(SeqCst),
+                dg_lab_v2.a_scalar.pulse_width.load(SeqCst),
+            ),
+            false,
+        ),
+        HardwareWriteCmd::new(
+            Endpoint::Generic1,
+            xyz_to_bytes(
+                dg_lab_v2.b_scalar.xy.0.load(SeqCst),
+                dg_lab_v2.b_scalar.xy.1.load(SeqCst),
+                dg_lab_v2.b_scalar.pulse_width.load(SeqCst),
+            ),
+            false,
+        ),
+    ]
+}
+
 struct ChannelScalar {
     power: Arc<AtomicU32>,
     xy: Arc<(AtomicU32, AtomicU32)>,
@@ -62,7 +103,37 @@ pub struct DGLabV2 {
     b_scalar: Arc<ChannelScalar>,
 }
 
-generic_protocol_setup!(DGLabV2, "dg-lab-v2");
+generic_protocol_initializer_setup!(DGLabV2, "dg-lab-v2");
+
+#[derive(Default)]
+pub struct DGLabV2Initializer {}
+
+#[async_trait]
+impl ProtocolInitializer for DGLabV2Initializer {
+    async fn initialize(
+        &mut self,
+        hardware: Arc<Hardware>,
+        _: &ProtocolDeviceAttributes,
+    ) -> Result<Arc<dyn ProtocolHandler>, ButtplugDeviceError> {
+        let handler = Arc::new(DGLabV2::default());
+        let handler_copy = handler.clone();
+        let _ = async_manager::spawn(async move {
+            let duration = Duration::from_millis(REPEAT_SLEEP_DURATION);
+            // Wait until test finished, or it would cause failure of test (The order of HardwareCmd changed)
+            // TODO: Maybe there's a better way to solve this
+            util::sleep(Duration::from_millis(WAIT_UNTIL_TEST_DURATION)).await;
+            loop {
+                for cmd in &commands_vec_by_struct(&handler_copy)[1..] {
+                    if let Err(e) = hardware.write_value(&cmd).await {
+                        warn!("Error writing repeat packet: {:?}", e);
+                    }
+                }
+                util::sleep(duration).await;
+            }
+        });
+        Ok(handler)
+    }
+}
 
 impl Default for DGLabV2 {
     fn default() -> Self {
@@ -82,10 +153,6 @@ impl Default for DGLabV2 {
 }
 
 impl ProtocolHandler for DGLabV2 {
-    fn keepalive_strategy(&self) -> ProtocolKeepaliveStrategy {
-        ProtocolKeepaliveStrategy::RepeatLastPacketStrategy
-    }
-
     fn handle_scalar_cmd(&self, commands: &[Option<(ActuatorType, u32)>]) -> Result<Vec<HardwareCommand>, ButtplugDeviceError> {
         // Power A (S)
         let power_a_scalar = self.a_scalar.power.clone();
@@ -195,34 +262,10 @@ impl ProtocolHandler for DGLabV2 {
             }
         }
         Ok(
-            vec![
-                HardwareWriteCmd::new(
-                    Endpoint::Tx,
-                    ab_power_to_byte(
-                        self.a_scalar.power.load(SeqCst),
-                        self.b_scalar.power.load(SeqCst),
-                    ),
-                    false,
-                ).into(),
-                HardwareWriteCmd::new(
-                    Endpoint::Generic0,
-                    xyz_to_bytes(
-                        self.a_scalar.xy.0.load(SeqCst),
-                        self.a_scalar.xy.1.load(SeqCst),
-                        self.a_scalar.pulse_width.load(SeqCst),
-                    ),
-                    false,
-                ).into(),
-                HardwareWriteCmd::new(
-                    Endpoint::Generic1,
-                    xyz_to_bytes(
-                        self.b_scalar.xy.0.load(SeqCst),
-                        self.b_scalar.xy.1.load(SeqCst),
-                        self.b_scalar.pulse_width.load(SeqCst),
-                    ),
-                    false,
-                ).into(),
-            ]
+            commands_vec_by_struct(self)
+                .into_iter()
+                .map(|cmd| HardwareCommand::from(cmd))
+                .collect()
         )
     }
 }

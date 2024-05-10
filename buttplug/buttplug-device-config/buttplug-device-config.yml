@@ -4789,10 +4789,10 @@ protocols:
           - StepRange: [ 0, 2047 ]
             ActuatorType: Vibrate
             FeatureDescriptor: Channel B Power
-          - StepRange: [ 10, 1000 ]
+          - StepRange: [ 9, 1000 ]
             ActuatorType: Oscillate
             FeatureDescriptor: Channel A Frequency
-          - StepRange: [ 10, 1000 ]
+          - StepRange: [ 9, 1000 ]
             ActuatorType: Oscillate
             FeatureDescriptor: Channel B Frequency
           - StepRange: [ 0, 31 ]

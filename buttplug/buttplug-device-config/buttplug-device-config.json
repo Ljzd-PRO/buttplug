@@ -9754,7 +9754,7 @@
             },
             {
               "StepRange": [
-                10,
+                9,
                 1000
               ],
               "ActuatorType": "Oscillate",
@@ -9762,7 +9762,7 @@
             },
             {
               "StepRange": [
-                10,
+                9,
                 1000
               ],
               "ActuatorType": "Oscillate",

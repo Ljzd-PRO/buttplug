@@ -16,10 +16,8 @@ use crate::core::errors::ButtplugDeviceError::ProtocolSpecificError;
 use crate::core::message::{ActuatorType, Endpoint};
 use crate::server::device::configuration::ProtocolDeviceAttributes;
 use crate::server::device::hardware::{Hardware, HardwareCommand, HardwareWriteCmd};
-use crate::server::device::protocol::ProtocolAttributesType;
 use crate::server::device::protocol::ProtocolIdentifier;
 use crate::server::device::protocol::ProtocolInitializer;
-use crate::server::ServerDeviceIdentifier;
 
 static MINIMUM_INPUT_FREQUENCY: u32 = 10;
 static MAXIMUM_INPUT_FREQUENCY: u32 = 1000;

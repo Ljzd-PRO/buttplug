@@ -12696,6 +12696,240 @@
           }
         }
       ]
+    },
+    "dg-lab-v2": {
+      "defaults": {
+        "name": "Dungeon Lab V2",
+        "features": [
+          {
+            "feature-type": "Vibrate",
+            "description": "Channel A Power",
+            "actuator": {
+              "step-range": [
+                0,
+                2047
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Vibrate",
+            "description": "Channel B Power",
+            "actuator": {
+              "step-range": [
+                0,
+                2047
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Oscillate",
+            "description": "Channel A Frequency",
+            "actuator": {
+              "step-range": [
+                9,
+                1000
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Oscillate",
+            "description": "Channel B Frequency",
+            "actuator": {
+              "step-range": [
+                9,
+                1000
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Inflate",
+            "description": "Channel A Pulse Width",
+            "actuator": {
+              "step-range": [
+                0,
+                31
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Inflate",
+            "description": "Channel B Pulse Width",
+            "actuator": {
+              "step-range": [
+                0,
+                31
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Battery",
+            "description": "Battery Level",
+            "sensor": {
+              "value-range": [
+                [
+                  0,
+                  100
+                ]
+              ],
+              "messages": [
+                "SensorReadCmd"
+              ]
+            }
+          }
+        ]
+      },
+      "communication": [
+        {
+          "btle": {
+            "names": [
+              "D-LAB ESTIM01"
+            ],
+            "services": {
+              "955a180a-0fe2-f5aa-a094-84b8d4f3e8ad": {
+                "rxblebattery": "955a1500-0fe2-f5aa-a094-84b8d4f3e8ad"
+              },
+              "955a180b-0fe2-f5aa-a094-84b8d4f3e8ad": {
+                "tx": "955a1504-0fe2-f5aa-a094-84b8d4f3e8ad",
+                "generic0": "955a1505-0fe2-f5aa-a094-84b8d4f3e8ad",
+                "generic1": "955a1506-0fe2-f5aa-a094-84b8d4f3e8ad"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "dg-lab-v3": {
+      "defaults": {
+        "name": "Dungeon Lab V3",
+        "features": [
+          {
+            "feature-type": "Vibrate",
+            "description": "Channel A Power",
+            "actuator": {
+              "step-range": [
+                0,
+                200
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Vibrate",
+            "description": "Channel B Power",
+            "actuator": {
+              "step-range": [
+                0,
+                200
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Oscillate",
+            "description": "Channel A Frequency",
+            "actuator": {
+              "step-range": [
+                9,
+                1000
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Oscillate",
+            "description": "Channel B Frequency",
+            "actuator": {
+              "step-range": [
+                9,
+                1000
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Inflate",
+            "description": "Channel A Waveform Strength",
+            "actuator": {
+              "step-range": [
+                0,
+                100
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Inflate",
+            "description": "Channel B Waveform Strength",
+            "actuator": {
+              "step-range": [
+                0,
+                100
+              ],
+              "messages": [
+                "ScalarCmd"
+              ]
+            }
+          },
+          {
+            "feature-type": "Battery",
+            "description": "Battery Level",
+            "sensor": {
+              "value-range": [
+                [
+                  0,
+                  100
+                ]
+              ],
+              "messages": [
+                "SensorReadCmd"
+              ]
+            }
+          }
+        ]
+      },
+      "communication": [
+        {
+          "btle": {
+            "names": [
+              "47L121000"
+            ],
+            "services": {
+              "0000180c-0000-1000-8000-00805f9b34fb": {
+                "tx": "0000150a-0000-1000-8000-00805f9b34fb",
+                "rx": "0000150b-0000-1000-8000-00805f9b34fb"
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -8,7 +8,8 @@
 mod util;
 extern crate buttplug;
 
-use buttplug::server::ButtplugServerBuilder;
+use buttplug::util::device_configuration::load_protocol_configs;
+use tokio_test::assert_ok;
 
 const BASE_CONFIG_JSON: &str = r#"
 {
@@ -59,7 +60,7 @@ const BASE_CONFIG_JSON: &str = r#"
 const BASE_VALID_VERSION_CONFIG_JSON: &str = r#"
 {
   "version": {
-    "major": 2,
+    "major": 3,
     "minor": 999
   }
 }
@@ -77,7 +78,7 @@ const BASE_INVALID_VERSION_CONFIG_JSON: &str = r#"
 const BASE_VALID_NULL_USER_CONFIG_JSON: &str = r#"
 {
   "version": {
-    "major": 2,
+    "major": 3,
     "minor": 999
   },
   "user-configs": {}
@@ -87,129 +88,287 @@ const BASE_VALID_NULL_USER_CONFIG_JSON: &str = r#"
 #[cfg(feature = "server")]
 #[tokio::test]
 async fn test_valid_null_version_config() {
-  ButtplugServerBuilder::default()
-    .user_device_configuration_json(Some(BASE_VALID_VERSION_CONFIG_JSON.to_owned()))
-    .finish()
-    .unwrap();
+  assert_ok!(load_protocol_configs(
+    &Some(BASE_VALID_VERSION_CONFIG_JSON.to_owned()),
+    &None,
+    false
+  ));
 }
 
 #[cfg(feature = "server")]
 #[tokio::test]
 async fn test_valid_null_user_config() {
-  ButtplugServerBuilder::default()
-    .user_device_configuration_json(Some(BASE_VALID_NULL_USER_CONFIG_JSON.to_owned()))
-    .finish()
-    .unwrap();
+  assert_ok!(load_protocol_configs(
+    &None,
+    &Some(BASE_VALID_NULL_USER_CONFIG_JSON.to_owned()),
+    false
+  ));
 }
 
 #[cfg(feature = "server")]
 #[tokio::test]
 async fn test_invalid_null_version_config() {
-  assert!(ButtplugServerBuilder::default()
-    .user_device_configuration_json(Some(BASE_INVALID_VERSION_CONFIG_JSON.to_owned()))
-    .finish()
-    .is_err());
+  assert!(load_protocol_configs(
+    &None,
+    &Some(BASE_INVALID_VERSION_CONFIG_JSON.to_owned()),
+    false
+  )
+  .is_err());
 }
 
 #[cfg(feature = "server")]
 #[tokio::test]
 #[ignore = "Still need to update for new message format"]
 async fn test_basic_device_config() {
-  ButtplugServerBuilder::default()
-    .device_configuration_json(Some(BASE_CONFIG_JSON.to_owned()))
-    .finish()
-    .unwrap();
+  assert!(load_protocol_configs(&Some(BASE_CONFIG_JSON.to_owned()), &None, false).is_ok());
 }
 
 #[cfg(feature = "server")]
 #[tokio::test]
-#[ignore = "Still need to update for new message format"]
-async fn test_valid_step_range() {
+async fn test_valid_user_config() {
   let user_config_json = r#"
   {
-    "version": 63,
+    "version": {
+      major: 3,
+      minor: 0
+    },
     "user-configs": {
-      "devices": {
-            "test-addr": {
-              "messages": {
-                "VibrateCmd": {
-                  "StepRange": [
-                    [50, 60]
+      "devices": [
+        {
+          "identifier": {
+            "address": "UserConfigTest",
+            "protocol": "lovense",
+            "identifier": "B"
+          },
+          "config": {
+            "name": "Lovense Test Device",
+            "features": [
+              {
+                "feature-type": "Vibrate",
+                "description": "Test Speed",
+                "actuator": {
+                  "step-range": [
+                    0,
+                    20
+                  ],
+                  "step-limit: [
+                    10,
+                    15
+                  ],
+                  "messages": [
+                    "ScalarCmd"
+                  ]
+                }
+              },
+              {
+                "feature-type": "Battery",
+                "description": "Battery Level",
+                "sensor": {
+                  "value-range": [
+                    [
+                      0,
+                      100
+                    ]
+                  ],
+                  "messages": [
+                    "SensorReadCmd"
                   ]
                 }
               }
+            ],
+            "user-config": {
+              "allow": false,
+              "deny": false,
+              "index": 0,
+              "display-name": "Lovense Name Test"
             }
           }
+        }
+      ]
     }
-  }
-  "#;
-  assert!(ButtplugServerBuilder::default()
-    .device_configuration_json(Some(BASE_CONFIG_JSON.to_owned()))
-    .user_device_configuration_json(Some(user_config_json.to_owned()))
-    .finish()
-    .is_ok());
+  }"#;
+  assert!(load_protocol_configs(
+    &Some(BASE_CONFIG_JSON.to_owned()),
+    &Some(user_config_json.to_owned()),
+    false
+  )
+  .is_err());
 }
 
 #[cfg(feature = "server")]
 #[tokio::test]
-#[ignore = "Still need to update for new message format"]
 async fn test_invalid_step_range_device_config_wrong_range_length() {
   let user_config_json = r#"
   {
-    "version": 63,
+    "version": {
+      major: 3,
+      minor: 0
+    },
     "user-configs": {
-      "devices": {
-            "test-addr": {
-              "messages": {
-                "VibrateCmd": {
-                  "StepRange": [
-                    [50]
+      "devices": [
+        {
+          "identifier": {
+            "address": "UserConfigTest",
+            "protocol": "lovense",
+            "identifier": "B"
+          },
+          "config": {
+            "name": "Lovense Test Device",
+            "features": [
+              {
+                "feature-type": "Vibrate",
+                "description": "Test Speed",
+                "actuator": {
+                  "step-range": [
+                    10
+                  ],
+                  "messages": [
+                    "ScalarCmd"
+                  ]
+                }
+              },
+              {
+                "feature-type": "Battery",
+                "description": "Battery Level",
+                "sensor": {
+                  "value-range": [
+                    [
+                      0,
+                      100
+                    ]
+                  ],
+                  "messages": [
+                    "SensorReadCmd"
                   ]
                 }
               }
-            }
-      }
-    }
-  }
-  "#;
-  assert!(ButtplugServerBuilder::default()
-    .device_configuration_json(Some(BASE_CONFIG_JSON.to_owned()))
-    .user_device_configuration_json(Some(user_config_json.to_owned()))
-    .finish()
-    .is_err());
-}
-
-#[cfg(feature = "server")]
-#[tokio::test]
-#[ignore = "Still need to update for new message format"]
-async fn test_invalid_step_range_device_config_wrong_order() {
-  let user_config_json = r#"
-  {
-    "version": 63,
-    "user-configs": {
-      "devices": {
-            "test-addr": {
-              "messages": {
-                "VibrateCmd": {
-                  "StepRange": [
-                    [60, 50]
-                  ]
-                }
-              }
+            ],
+            "user-config": {
+              "allow": false,
+              "deny": false,
+              "index": 0,
+              "display-name": "Lovense Name Test"
             }
           }
-
+        }
+      ]
     }
   }
   "#;
-  assert!(ButtplugServerBuilder::default()
-    .device_configuration_json(Some(BASE_CONFIG_JSON.to_owned()))
-    .user_device_configuration_json(Some(user_config_json.to_owned()))
-    .finish()
-    .is_ok());
-  assert!(ButtplugServerBuilder::default()
-    .device_configuration_json(Some(BASE_CONFIG_JSON.to_owned()))
-    .user_device_configuration_json(Some(user_config_json.to_owned()))
-    .finish()
-    .is_ok());
+  assert!(load_protocol_configs(
+    &Some(BASE_CONFIG_JSON.to_owned()),
+    &Some(user_config_json.to_owned()),
+    false
+  )
+  .is_err());
 }
+
+#[tokio::test]
+async fn test_server_builder_null_device_config() {
+  assert!(load_protocol_configs(&None, &None, false).is_ok())
+}
+
+#[tokio::test]
+async fn test_server_builder_device_config_invalid_json() {
+  assert!(load_protocol_configs(&Some("{\"Not Valid JSON\"}".to_owned()), &None, false).is_err())
+}
+
+#[tokio::test]
+#[ignore = "Not testing the right thing"]
+async fn test_server_builder_device_config_old_config_version() {
+  // missing version block.
+  let device_json = r#"{
+      "version": {
+        "major": 1,
+        "minor": 0
+      },
+      "protocols": {}
+    }
+    "#;
+  assert!(load_protocol_configs(&Some(device_json.to_owned()), &None, false).is_err());
+}
+
+#[tokio::test]
+async fn test_server_builder_user_device_config_old_config_version() {
+  // missing version block.
+  let device_json = r#"{
+      "version": {
+        "major": 1,
+        "minor": 0
+      },
+      "protocols": {}
+    }
+    "#;
+  assert!(load_protocol_configs(&None, &Some(device_json.to_owned()), false).is_err());
+}
+
+#[tokio::test]
+async fn test_server_builder_user_device_config_invalid_json() {
+  assert!(load_protocol_configs(&None, &Some("{\"Not Valid JSON\"}".to_owned()), false).is_err())
+}
+
+/*
+    #[tokio::test]
+    fn test_user_config_loading() {
+      // Assume we have a nobra's entry in the device config.
+      let mut config = create_test_dcm(false);
+      assert!(config.protocol_definitions().contains_key("nobra"));
+      assert!(config
+        .protocol_definitions()
+        .get("nobra")
+        .expect("Test, assuming infallible")
+        .serial
+        .as_ref()
+        .is_some());
+      assert_eq!(
+        config
+          .protocol_definitions()
+          .get("nobra")
+          .expect("Test, assuming infallible")
+          .serial
+          .as_ref()
+          .expect("Test, assuming infallible")
+          .len(),
+        1
+      );
+
+      // Now try overriding it, make sure we still only have 1.
+      config = create_test_dcm(false);
+      let mut nobra_def = ProtocolDefinition::default();
+      let mut serial_specifier = SerialSpecifier::default();
+      serial_specifier.port = "COM1".to_owned();
+      nobra_def.serial = Some(vec![serial_specifier]);
+      config.add_protocol_definition("nobra", nobra_def);
+      assert!(config.protocol_definitions().contains_key("nobra"));
+      assert!(config
+        .protocol_definitions()
+        .get("nobra")
+        .expect("Test, assuming infallible")
+        .serial
+        .as_ref()
+        .is_some());
+      assert_eq!(
+        config
+          .protocol_definitions()
+          .get("nobra")
+          .expect("Test, assuming infallible")
+          .serial
+          .as_ref()
+          .expect("Test, assuming infallible")
+          .len(),
+        1
+      );
+      assert!(config
+        .protocol_definitions()
+        .get("nobra")
+        .expect("Test, assuming infallible")
+        .serial
+        .as_ref()
+        .expect("Test, assuming infallible")
+        .iter()
+        .any(|x| x.port == "COM1"));
+    }
+*/
+// TODO Test invalid config load (not json)
+
+// TODO Test calculation/change of Step Count via Step Range

@@ -93,7 +93,7 @@
 #   user in the user device config file.
 version:
   major: 2
-  minor: 29
+  minor: 30
 protocols:
   lovense:
     # Lovense is special. Special in oh so many ways.
@@ -2088,6 +2088,38 @@ protocols:
       - identifier:
           - ERICA
         name: Svakom Erica
+  svakom-v5:
+    btle:
+      names:
+        - Chika
+        - Mora Neo
+      services:
+        0000ffe0-0000-1000-8000-00805f9b34fb:
+          tx: 0000ffe1-0000-1000-8000-00805f9b34fb
+          rx: 0000ffe2-0000-1000-8000-00805f9b34fb
+    defaults:
+      name: Svakom Device v5
+      messages:
+        ScalarCmd:
+          - StepRange: [ 0, 10 ]
+            ActuatorType: Vibrate
+          - StepRange: [ 0, 10 ]
+            ActuatorType: Vibrate
+    configurations:
+      - identifier:
+          - Chika
+        name: Svakom Chika
+      - identifier:
+          - Mora Neo
+        name: Svakom Mora Neo
+        messages:
+          ScalarCmd:
+            - StepRange: [ 0, 10 ]
+              ActuatorType: Vibrate
+            - StepRange: [ 0, 10 ]
+              ActuatorType: Vibrate
+            - StepRange: [ 0, 3 ]
+              ActuatorType: Oscillate
   svakom-sam:
     btle:
       names:
@@ -2844,6 +2876,11 @@ protocols:
         - MAG
         - SPAN
         - RANGE
+        - ORBIT
+        - JOIN G
+        - LINK
+        - GRASP
+        - RECEIVE
       services:
         0000ff00-0000-1000-8000-00805f9b34fb:
           tx: 0000ff01-0000-1000-8000-00805f9b34fb
@@ -2870,6 +2907,21 @@ protocols:
       - identifier:
           - RANGE
         name: Love Distance Range
+      - identifier:
+          - ORBIT
+        name: Love Distance Range
+      - identifier:
+          - JOIN G
+        name: Love Distance Join G
+      - identifier:
+          - LINK
+        name: Love Distance Link
+      - identifier:
+          - GRASP
+        name: Love Distance Grasp
+      - identifier:
+          - RECEIVE
+        name: Love Distance Receive
   satisfyer:
     btle:
       names:
@@ -3951,6 +4003,19 @@ protocols:
         ScalarCmd:
           - StepRange: [0, 20]
             ActuatorType: Vibrate
+  metaxsire-v4:
+    btle:
+      names:
+        - CFG1 vibrator
+      services:
+        0000cfa2-0000-1000-8000-00805f9b34fb:
+          tx: 0000cf21-0000-1000-8000-00805f9b34fb
+    defaults:
+      name: metaXsire G1 Vibrator
+      messages:
+        ScalarCmd:
+          - StepRange: [0, 99]
+            ActuatorType: Vibrate
   cowgirl:
     btle:
       names:
@@ -3993,6 +4058,71 @@ protocols:
       - identifier:
           - V415
         name: Galaku Nebula
+  galaku:
+    btle:
+      names:
+        - EJX-Para
+        - GK03
+        - GK10085
+        - GS03
+        - GS07
+        - GS85
+        - GS02
+        - GS10
+        - GS01
+        - GS04
+        - GS17
+        - GS21
+        - GS23
+        - GS22
+        - GS16
+        - GS19
+        - AK04
+        - AS67
+        - AS90
+        - K020
+        - GS25
+        - GH28
+        - GS28
+        - LL18
+        - GK23
+        - GK27
+        - G29B
+        - GA23
+        - L26H
+        - GA25
+        - GA26
+        - GK22
+        - GX85
+        - GX07
+        - GX17
+        - GX21
+        - GX33
+        - GX22
+        - GX16
+        - GX29
+        - GX23
+        - GX26
+        - GX36
+        - GX39
+        - GX25
+        - G326
+        - G335
+      services:
+        00001000-0000-1000-8000-00805f9b34fb:
+          tx: 00001001-0000-1000-8000-00805f9b34fb
+          rxblebattery: 00001002-0000-1000-8000-00805f9b34fb
+    defaults:
+      name: Galaku Device
+      messages:
+        ScalarCmd:
+          - StepRange: [ 0, 100 ]
+            ActuatorType: Vibrate
+            FeatureDescriptor: Vibrate
+        SensorReadCmd:
+          - FeatureDescriptor: Battery Level
+            SensorType: Battery
+            SensorRange: [ [ 0, 100 ] ]
   xibao:
     btle:
       names:
@@ -4382,9 +4512,14 @@ protocols:
         - J-RetroGuard
         - J-TrueForm
         - J-TrueForm3
+        - J-Rhythmic2
         - J-Rhythmic3
         - J-Mysticolor
         - J-VividWings
+        - J-Rainbow
+        - J-BlackBull
+        - J-Peacock
+        - J-Mariner
       services:
         0000ffa0-0000-1000-8000-00805f9b34fb:
           tx: 0000ffa1-0000-1000-8000-00805f9b34fb
@@ -4414,8 +4549,20 @@ protocols:
           - J-TrueForm
         name: JoyHub TrueForm
       - identifier:
+          - J-Rhythmic2
+        name: JoyHub Rhythmic 2
+      - identifier:
           - J-Rhythmic3
         name: JoyHub Rhythmic 3
+      - identifier:
+          - J-Rainbow
+        name: JoyHub Rainbow
+      - identifier:
+          - J-BlackBull
+        name: JoyHub Black Bull
+      - identifier:
+          - J-Peacock
+        name: JoyHub Peacock
       - identifier:
           - J-Petalwish2
         name: JoyHub Petalwish 2
@@ -4469,6 +4616,16 @@ protocols:
               ActuatorType: Vibrate
             - StepRange: [0, 255]
               ActuatorType: Oscillate
+      - identifier:
+          - J-Mariner
+        name: JoyHub Mariner
+        messages:
+          ScalarCmd:
+            - StepRange: [0, 255]
+              ActuatorType: Rotate
+            - StepRange: [0, 2]
+              FeatureDescriptor: Air Pump
+              ActuatorType: Constrict
   joyhub-v2:
     btle:
       names:
@@ -4492,6 +4649,8 @@ protocols:
         # - J-Verax3
         - J-Euphoric2
         - J-ROSEBUD
+        - J-Morningbuds2
+        - J-Rhythmic4
       services:
         0000ffa0-0000-1000-8000-00805f9b34fb:
           tx: 0000ffa1-0000-1000-8000-00805f9b34fb
@@ -4685,6 +4844,24 @@ protocols:
             - StepRange: [0, 5]
               FeatureDescriptor: Suction
               ActuatorType: Constrict
+      - identifier:
+          - J-Morningbuds2
+        name: JoyHub Morningbuds
+        messages:
+          ScalarCmd:
+            - StepRange: [ 0, 255 ]
+              ActuatorType: Rotate
+            - StepRange: [ 0, 255 ]
+              ActuatorType: Vibrate
+      - identifier:
+          - J-Rhythmic4
+        name: JoyHub Rhythmic 4
+        messages:
+          ScalarCmd:
+            - StepRange: [0, 255]
+              ActuatorType: Oscillate
+            - StepRange: [0, 255]
+              ActuatorType: Vibrate
   joyhub-v3:
     btle:
       names:
@@ -4740,7 +4917,10 @@ protocols:
   vibcrafter:
     btle:
       names:
-        - be gentle
+        - be gentle # Harlow
+        - Janna
+        - Hayden
+        - Nidalee
       services:
         53300051-0060-4bd4-bbe5-a6920e4c5663:
           tx: 53300052-0060-4bd4-bbe5-a6920e4c5663
@@ -4753,6 +4933,23 @@ protocols:
             ActuatorType: Vibrate
           - StepRange: [ 0, 99 ]
             ActuatorType: Vibrate
+    configurations:
+      - identifier:
+          - be gentle
+        name: VibCrafter Harlow
+      - identifier:
+          - Hayden
+        name: VibCrafter Hayden
+      - identifier:
+          - Nidalee
+        name: VibCrafter Nidalee
+      - identifier:
+          - Janna
+        name: VibCrafter Janna
+        messages:
+          ScalarCmd:
+            - StepRange: [ 0, 99 ]
+              ActuatorType: Vibrate
   lioness:
     btle:
       names:

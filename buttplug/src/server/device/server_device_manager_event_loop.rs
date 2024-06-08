@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -10,7 +10,6 @@ use crate::{
   server::device::{
     configuration::DeviceConfigurationManager,
     hardware::communication::{HardwareCommunicationManager, HardwareCommunicationManagerEvent},
-    server_device::build_server_device,
     ServerDevice,
     ServerDeviceEvent,
   },
@@ -56,7 +55,7 @@ pub(super) struct ServerDeviceManagerEventLoop {
 impl ServerDeviceManagerEventLoop {
   pub fn new(
     comm_managers: Vec<Box<dyn HardwareCommunicationManager>>,
-    device_config_manager: DeviceConfigurationManager,
+    device_config_manager: Arc<DeviceConfigurationManager>,
     device_map: Arc<DashMap<u32, Arc<ServerDevice>>>,
     loop_cancellation_token: CancellationToken,
     server_sender: broadcast::Sender<ButtplugServerMessage>,
@@ -66,7 +65,7 @@ impl ServerDeviceManagerEventLoop {
     let (device_event_sender, device_event_receiver) = mpsc::channel(256);
     Self {
       comm_managers,
-      device_config_manager: Arc::new(device_config_manager),
+      device_config_manager: device_config_manager,
       server_sender,
       device_map,
       device_comm_receiver,
@@ -215,7 +214,7 @@ impl ServerDeviceManagerEventLoop {
         );
 
         async_manager::spawn(async move {
-          match build_server_device(device_config_manager, creator, protocol_specializers).await {
+          match ServerDevice::build(device_config_manager, creator, protocol_specializers).await {
             Ok(device) => {
               if device_event_sender_clone
                 .send(ServerDeviceEvent::Connected(Arc::new(device)))
@@ -245,8 +244,8 @@ impl ServerDeviceManagerEventLoop {
         );
         let _enter = span.enter();
 
-        // See if we have a reserved or reusable device index here.
-        let device_index = self.device_config_manager.device_index(device.identifier());
+        // Get the index from the device
+        let device_index = device.definition().user_config().index();
         // Since we can now reuse device indexes, this means we might possibly
         // stomp on devices already in the map if they don't register a
         // disconnect before we try to insert the new device. If we have a
@@ -285,9 +284,9 @@ impl ServerDeviceManagerEventLoop {
         let device_added_message = DeviceAdded::new(
           device_index,
           &device.name(),
-          &device.display_name(),
+          &device.definition().user_config().display_name(),
           &None,
-          &device.message_attributes().into(),
+          &device.message_attributes().clone().into(),
         );
         self.device_map.insert(device_index, device);
         // After that, we can send out to the server's event listeners to let

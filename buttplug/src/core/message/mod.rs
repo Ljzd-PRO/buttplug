@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -17,6 +17,7 @@ mod battery_level_cmd;
 mod battery_level_reading;
 mod client_device_message_attributes;
 mod device_added;
+mod device_feature;
 mod device_list;
 mod device_message_info;
 mod device_removed;
@@ -74,6 +75,13 @@ pub use client_device_message_attributes::{
   SensorType,
 };
 pub use device_added::{DeviceAdded, DeviceAddedV0, DeviceAddedV1, DeviceAddedV2};
+pub use device_feature::{
+  DeviceFeature,
+  DeviceFeatureActuator,
+  DeviceFeatureRaw,
+  DeviceFeatureSensor,
+  FeatureType,
+};
 pub use device_list::{DeviceList, DeviceListV0, DeviceListV1, DeviceListV2};
 pub use device_message_info::{
   DeviceMessageInfo,
@@ -253,6 +261,40 @@ impl PartialOrd for ButtplugDeviceMessageType {
 impl Ord for ButtplugDeviceMessageType {
   fn cmp(&self, other: &ButtplugDeviceMessageType) -> Ordering {
     self.to_string().cmp(&other.to_string())
+  }
+}
+
+#[derive(Copy, Debug, Clone, Hash, Display, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ButtplugActuatorFeatureMessageType {
+  ScalarCmd,
+  RotateCmd,
+  LinearCmd,
+}
+
+impl From<ButtplugActuatorFeatureMessageType> for ButtplugDeviceMessageType {
+  fn from(value: ButtplugActuatorFeatureMessageType) -> Self {
+    match value {
+      ButtplugActuatorFeatureMessageType::LinearCmd => ButtplugDeviceMessageType::LinearCmd,
+      ButtplugActuatorFeatureMessageType::RotateCmd => ButtplugDeviceMessageType::RotateCmd,
+      ButtplugActuatorFeatureMessageType::ScalarCmd => ButtplugDeviceMessageType::ScalarCmd,
+    }
+  }
+}
+
+#[derive(Copy, Debug, Clone, Hash, Display, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ButtplugSensorFeatureMessageType {
+  SensorReadCmd,
+  SensorSubscribeCmd,
+}
+
+impl From<ButtplugSensorFeatureMessageType> for ButtplugDeviceMessageType {
+  fn from(value: ButtplugSensorFeatureMessageType) -> Self {
+    match value {
+      ButtplugSensorFeatureMessageType::SensorReadCmd => ButtplugDeviceMessageType::SensorReadCmd,
+      ButtplugSensorFeatureMessageType::SensorSubscribeCmd => {
+        ButtplugDeviceMessageType::SensorSubscribeCmd
+      }
+    }
   }
 }
 

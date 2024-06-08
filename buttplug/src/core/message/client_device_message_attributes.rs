@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -12,6 +12,13 @@ use crate::core::{
 use getset::{Getters, MutGetters, Setters};
 use serde::{ser::SerializeSeq, Deserialize, Serialize, Serializer};
 use std::ops::RangeInclusive;
+
+use super::{
+  ButtplugActuatorFeatureMessageType,
+  ButtplugSensorFeatureMessageType,
+  DeviceFeature,
+  FeatureType,
+};
 
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActuatorType {
@@ -27,6 +34,24 @@ pub enum ActuatorType {
   Position,
 }
 
+impl TryFrom<FeatureType> for ActuatorType {
+  type Error = String;
+  fn try_from(value: FeatureType) -> Result<Self, Self::Error> {
+    match value {
+      FeatureType::Unknown => Ok(ActuatorType::Unknown),
+      FeatureType::Vibrate => Ok(ActuatorType::Vibrate),
+      FeatureType::Rotate => Ok(ActuatorType::Rotate),
+      FeatureType::Oscillate => Ok(ActuatorType::Oscillate),
+      FeatureType::Constrict => Ok(ActuatorType::Constrict),
+      FeatureType::Inflate => Ok(ActuatorType::Inflate),
+      FeatureType::Position => Ok(ActuatorType::Position),
+      _ => Err(format!(
+        "Feature type {value} not valid for ActuatorType conversion"
+      )),
+    }
+  }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Display)]
 pub enum SensorType {
   Unknown,
@@ -37,6 +62,22 @@ pub enum SensorType {
   // Temperature,
   // Accelerometer,
   // Gyro,
+}
+
+impl TryFrom<FeatureType> for SensorType {
+  type Error = String;
+  fn try_from(value: FeatureType) -> Result<Self, Self::Error> {
+    match value {
+      FeatureType::Unknown => Ok(SensorType::Unknown),
+      FeatureType::Battery => Ok(SensorType::Battery),
+      FeatureType::RSSI => Ok(SensorType::RSSI),
+      FeatureType::Button => Ok(SensorType::Button),
+      FeatureType::Pressure => Ok(SensorType::Pressure),
+      _ => Err(format!(
+        "Feature type {value} not valid for SensorType conversion"
+      )),
+    }
+  }
 }
 
 // This will look almost exactly like ServerDeviceMessageAttributes. However, it will only contain
@@ -110,6 +151,59 @@ pub struct ClientDeviceMessageAttributes {
   vorze_a10_cyclone_cmd: Option<NullDeviceMessageAttributes>,
 }
 
+impl From<Vec<DeviceFeature>> for ClientDeviceMessageAttributes {
+  fn from(features: Vec<DeviceFeature>) -> Self {
+    let actuator_filter = |message_type| {
+      let attrs: Vec<ClientGenericDeviceMessageAttributes> = features
+        .iter()
+        .filter(|x| {
+          if let Some(actuator) = x.actuator() {
+            actuator.messages().contains(message_type)
+          } else {
+            false
+          }
+        })
+        .map(|x| x.clone().try_into().unwrap())
+        .collect();
+      if !attrs.is_empty() {
+        Some(attrs)
+      } else {
+        None
+      }
+    };
+
+    let sensor_filter = |message_type| {
+      let attrs: Vec<SensorDeviceMessageAttributes> = features
+        .iter()
+        .filter(|x| {
+          if let Some(sensor) = x.sensor() {
+            sensor.messages().contains(message_type)
+          } else {
+            false
+          }
+        })
+        .map(|x| x.clone().try_into().unwrap())
+        .collect();
+      if !attrs.is_empty() {
+        Some(attrs)
+      } else {
+        None
+      }
+    };
+
+    // Raw messages
+
+    Self {
+      scalar_cmd: actuator_filter(&ButtplugActuatorFeatureMessageType::ScalarCmd),
+      rotate_cmd: actuator_filter(&ButtplugActuatorFeatureMessageType::RotateCmd),
+      linear_cmd: actuator_filter(&ButtplugActuatorFeatureMessageType::LinearCmd),
+      sensor_read_cmd: sensor_filter(&ButtplugSensorFeatureMessageType::SensorReadCmd),
+      sensor_subscribe_cmd: sensor_filter(&ButtplugSensorFeatureMessageType::SensorSubscribeCmd),
+      ..Default::default()
+    }
+  }
+}
+
 impl ClientDeviceMessageAttributes {
   pub fn raw_unsubscribe_cmd(&self) -> &Option<RawDeviceMessageAttributes> {
     self.raw_subscribe_cmd()
@@ -161,17 +255,17 @@ impl ClientDeviceMessageAttributes {
 
   pub fn finalize(&mut self) {
     if let Some(scalar_attrs) = &mut self.scalar_cmd {
-      for (i, attr) in scalar_attrs.into_iter().enumerate() {
+      for (i, attr) in scalar_attrs.iter_mut().enumerate() {
         attr.index = i as u32;
       }
     }
     if let Some(sensor_read_attrs) = &mut self.sensor_read_cmd {
-      for (i, attr) in sensor_read_attrs.into_iter().enumerate() {
+      for (i, attr) in sensor_read_attrs.iter_mut().enumerate() {
         attr.index = i as u32;
       }
     }
     if let Some(sensor_subscribe_attrs) = &mut self.sensor_subscribe_cmd {
-      for (i, attr) in sensor_subscribe_attrs.into_iter().enumerate() {
+      for (i, attr) in sensor_subscribe_attrs.iter_mut().enumerate() {
         attr.index = i as u32;
       }
     }
@@ -255,6 +349,28 @@ pub struct ClientGenericDeviceMessageAttributes {
   index: u32,
 }
 
+impl TryFrom<DeviceFeature> for ClientGenericDeviceMessageAttributes {
+  type Error = String;
+  fn try_from(value: DeviceFeature) -> Result<Self, Self::Error> {
+    if let Some(actuator) = value.actuator() {
+      let actuator_type = (*value.feature_type()).try_into()?;
+      let step_limit = actuator.step_limit();
+      let step_count = step_limit.end() - step_limit.start();
+      let attrs = Self {
+        feature_descriptor: value.description().to_owned(),
+        actuator_type,
+        step_count: step_count,
+        index: 0,
+      };
+      Ok(attrs)
+    } else {
+      Err(format!(
+        "Cannot produce a GenericDeviceMessageAttribute from a feature with no actuator member"
+      ))
+    }
+  }
+}
+
 impl ClientGenericDeviceMessageAttributes {
   pub fn new(feature_descriptor: &str, step_count: u32, actuator_type: ActuatorType) -> Self {
     Self {
@@ -288,7 +404,7 @@ impl RawDeviceMessageAttributes {
 }
 
 fn range_sequence_serialize<S>(
-  range_vec: &Vec<RangeInclusive<u32>>,
+  range_vec: &Vec<RangeInclusive<i32>>,
   serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
@@ -311,11 +427,27 @@ pub struct SensorDeviceMessageAttributes {
   sensor_type: SensorType,
   #[getset(get = "pub")]
   #[serde(rename = "SensorRange", serialize_with = "range_sequence_serialize")]
-  sensor_range: Vec<RangeInclusive<u32>>,
+  sensor_range: Vec<RangeInclusive<i32>>,
   // TODO This needs to actually be part of the device info relayed to the client in spec v4.
   #[getset(get = "pub")]
   #[serde(skip, default)]
   index: u32,
+}
+
+impl TryFrom<DeviceFeature> for SensorDeviceMessageAttributes {
+  type Error = String;
+  fn try_from(value: DeviceFeature) -> Result<Self, Self::Error> {
+    if let Some(sensor) = value.sensor() {
+      Ok(Self {
+        feature_descriptor: value.description().to_owned(),
+        sensor_type: (*value.feature_type()).try_into()?,
+        sensor_range: sensor.value_range().clone(),
+        index: 0,
+      })
+    } else {
+      Err("Device Feature does not expose a sensor.".to_owned())
+    }
+  }
 }
 
 /*

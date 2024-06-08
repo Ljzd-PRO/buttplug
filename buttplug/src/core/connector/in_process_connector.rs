@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -12,7 +12,7 @@ use crate::{
     connector::{ButtplugConnector, ButtplugConnectorError, ButtplugConnectorResultFuture},
     message::{ButtplugCurrentSpecClientMessage, ButtplugCurrentSpecServerMessage},
   },
-  server::{ButtplugServer, ButtplugServerBuilder},
+  server::ButtplugServer,
   util::async_manager,
 };
 use futures::{
@@ -91,11 +91,13 @@ impl<'a> ButtplugInProcessClientConnector {
     let (server_outbound_sender, _) = channel(256);
     Self {
       server_outbound_sender,
-      server: Arc::new(server.unwrap_or_else(|| {
-        ButtplugServerBuilder::default()
-          .finish()
-          .expect("Default server builder should always work.")
-      })),
+      server: Arc::new(
+        server.unwrap(), /*.unwrap_or_else(|| {
+                           ButtplugServerBuilder::default()
+                             .finish()
+                             .expect("Default server builder should always work.")
+                         })*/
+      ),
       connected: Arc::new(AtomicBool::new(false)),
     }
   }

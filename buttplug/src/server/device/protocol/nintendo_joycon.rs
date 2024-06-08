@@ -6,13 +6,7 @@ use crate::{
   server::device::{
     configuration::ProtocolDeviceAttributes,
     hardware::{Hardware, HardwareCommand, HardwareWriteCmd},
-    protocol::{
-      ProtocolAttributesType,
-      ProtocolHandler,
-      ProtocolIdentifier,
-      ProtocolInitializer,
-      ServerDeviceIdentifier,
-    },
+    protocol::{ProtocolHandler, ProtocolIdentifier, ProtocolInitializer, UserDeviceIdentifier},
   },
   util::async_manager,
 };

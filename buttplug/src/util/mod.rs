@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -25,6 +25,7 @@ pub use wasmtimer::tokio::sleep;
 use crate::{
   client::ButtplugClient,
   core::connector::ButtplugInProcessClientConnectorBuilder,
+  server::device::{configuration::DeviceConfigurationManagerBuilder, ServerDeviceManagerBuilder},
   server::ButtplugServerBuilder,
 };
 
@@ -64,8 +65,12 @@ use crate::{
 /// `run()` method to pass it in.
 #[cfg(all(feature = "server", feature = "client"))]
 pub async fn in_process_client(client_name: &str, allow_raw_messages: bool) -> ButtplugClient {
-  let mut server_builder = ButtplugServerBuilder::default();
+  let dcm = DeviceConfigurationManagerBuilder::default()
+    .allow_raw_messages(allow_raw_messages)
+    .finish()
+    .unwrap();
 
+  let mut device_manager_builder = ServerDeviceManagerBuilder::new(dcm);
   #[cfg(all(
     feature = "btleplug-manager",
     any(
@@ -78,12 +83,12 @@ pub async fn in_process_client(client_name: &str, allow_raw_messages: bool) -> B
   ))]
   {
     use crate::server::device::hardware::communication::btleplug::BtlePlugCommunicationManagerBuilder;
-    server_builder.comm_manager(BtlePlugCommunicationManagerBuilder::default());
+    device_manager_builder.comm_manager(BtlePlugCommunicationManagerBuilder::default());
   }
   #[cfg(feature = "websocket-server-manager")]
   {
     use crate::server::device::hardware::communication::websocket_server::websocket_server_comm_manager::WebsocketServerDeviceCommunicationManagerBuilder;
-    server_builder.comm_manager(
+    device_manager_builder.comm_manager(
       WebsocketServerDeviceCommunicationManagerBuilder::default().listen_on_all_interfaces(true),
     );
   }
@@ -93,12 +98,13 @@ pub async fn in_process_client(client_name: &str, allow_raw_messages: bool) -> B
   ))]
   {
     use crate::server::device::hardware::communication::serialport::SerialPortCommunicationManagerBuilder;
-    server_builder.comm_manager(SerialPortCommunicationManagerBuilder::default());
+    device_manager_builder.comm_manager(SerialPortCommunicationManagerBuilder::default());
   }
   #[cfg(feature = "lovense-connect-service-manager")]
   {
     use crate::server::device::hardware::communication::lovense_connect_service::LovenseConnectServiceCommunicationManagerBuilder;
-    server_builder.comm_manager(LovenseConnectServiceCommunicationManagerBuilder::default());
+    device_manager_builder
+      .comm_manager(LovenseConnectServiceCommunicationManagerBuilder::default());
   }
   #[cfg(all(
     feature = "lovense-dongle-manager",
@@ -109,17 +115,15 @@ pub async fn in_process_client(client_name: &str, allow_raw_messages: bool) -> B
       LovenseHIDDongleCommunicationManagerBuilder,
       LovenseSerialDongleCommunicationManagerBuilder,
     };
-    server_builder.comm_manager(LovenseHIDDongleCommunicationManagerBuilder::default());
-    server_builder.comm_manager(LovenseSerialDongleCommunicationManagerBuilder::default());
+    device_manager_builder.comm_manager(LovenseHIDDongleCommunicationManagerBuilder::default());
+    device_manager_builder.comm_manager(LovenseSerialDongleCommunicationManagerBuilder::default());
   }
   #[cfg(all(feature = "xinput-manager", target_os = "windows"))]
   {
     use crate::server::device::hardware::communication::xinput::XInputDeviceCommunicationManagerBuilder;
-    server_builder.comm_manager(XInputDeviceCommunicationManagerBuilder::default());
+    device_manager_builder.comm_manager(XInputDeviceCommunicationManagerBuilder::default());
   }
-  if allow_raw_messages {
-    server_builder.allow_raw_messages();
-  }
+  let server_builder = ButtplugServerBuilder::new(device_manager_builder.finish().unwrap());
   let server = server_builder.finish().unwrap();
   let connector = ButtplugInProcessClientConnectorBuilder::default()
     .server(server)

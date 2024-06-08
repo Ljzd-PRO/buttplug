@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -12,7 +12,7 @@ use crate::{
     message::{self, ActuatorType, ButtplugDeviceMessage, ButtplugServerMessage, Endpoint},
   },
   server::device::{
-    configuration::ProtocolAttributesType,
+    configuration::UserDeviceIdentifier,
     hardware::{Hardware, HardwareCommand, HardwareReadCmd, HardwareWriteCmd},
     protocol::{
       generic_protocol_initializer_setup,
@@ -20,7 +20,6 @@ use crate::{
       ProtocolIdentifier,
       ProtocolInitializer,
     },
-    ServerDeviceIdentifier,
   },
 };
 use async_trait::async_trait;
@@ -44,7 +43,7 @@ impl ProtocolInitializer for LovenseConnectServiceInitializer {
   ) -> Result<Arc<dyn ProtocolHandler>, ButtplugDeviceError> {
     let mut protocol = LovenseConnectService::new(hardware.address());
 
-    if let Some(scalars) = attributes.message_attributes.scalar_cmd() {
+    if let Some(scalars) = attributes.message_attributes().scalar_cmd() {
       protocol.vibrator_count = scalars
         .clone()
         .iter()

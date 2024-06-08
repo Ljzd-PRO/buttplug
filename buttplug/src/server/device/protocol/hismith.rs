@@ -1,18 +1,16 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
 
-use crate::server::device::configuration::ProtocolDeviceAttributes;
 use crate::{
   core::{errors::ButtplugDeviceError, message::Endpoint},
   server::device::{
-    configuration::ProtocolAttributesType,
+    configuration::{ProtocolDeviceAttributes, UserDeviceIdentifier},
     hardware::{Hardware, HardwareCommand, HardwareReadCmd, HardwareWriteCmd},
     protocol::{ProtocolHandler, ProtocolIdentifier, ProtocolInitializer},
-    ServerDeviceIdentifier,
   },
 };
 use async_trait::async_trait;
@@ -42,7 +40,7 @@ impl ProtocolIdentifier for HismithIdentifier {
   async fn identify(
     &mut self,
     hardware: Arc<Hardware>,
-  ) -> Result<(ServerDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
+  ) -> Result<(UserDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
     let result = hardware
       .read_value(&HardwareReadCmd::new(Endpoint::RxBLEModel, 128, 500))
       .await?;
@@ -55,11 +53,7 @@ impl ProtocolIdentifier for HismithIdentifier {
     info!("Hismith Device Identifier: {}", identifier);
 
     Ok((
-      ServerDeviceIdentifier::new(
-        hardware.address(),
-        "hismith",
-        &ProtocolAttributesType::Identifier(identifier),
-      ),
+      UserDeviceIdentifier::new(hardware.address(), "hismith", &Some(identifier)),
       Box::new(HismithInitializer::default()),
     ))
   }

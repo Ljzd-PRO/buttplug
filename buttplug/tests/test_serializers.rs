@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -24,7 +24,7 @@ use buttplug::{
 };
 use std::sync::Arc;
 use tokio::sync::Notify;
-use util::ChannelClientTestHelper;
+use util::channel_transport::ChannelClientTestHelper;
 
 #[tokio::test]
 async fn test_garbled_client_rsi_response() {

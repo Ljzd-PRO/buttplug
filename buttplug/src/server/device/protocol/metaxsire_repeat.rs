@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -9,20 +9,18 @@ use crate::core::message::ActuatorType;
 use crate::core::message::ActuatorType::{Constrict, Rotate, Vibrate};
 use crate::{
   core::{errors::ButtplugDeviceError, message::Endpoint},
-  server::{
-    device::{
-      hardware::{Hardware, HardwareCommand, HardwareWriteCmd},
-      protocol::{
-        generic_protocol_initializer_setup,
-        ProtocolAttributesType,
-        ProtocolDeviceAttributes,
-        ProtocolHandler,
-        ProtocolIdentifier,
-        ProtocolInitializer,
-      },
+  server::device::{
+    configuration::UserDeviceIdentifier,
+    hardware::{Hardware, HardwareCommand, HardwareWriteCmd},
+    protocol::{
+      generic_protocol_initializer_setup,
+      ProtocolDeviceAttributes,
+      ProtocolHandler,
+      ProtocolIdentifier,
+      ProtocolInitializer,
     },
-    ServerDeviceIdentifier,
   },
+
   util::{async_manager, sleep},
 };
 use async_trait::async_trait;

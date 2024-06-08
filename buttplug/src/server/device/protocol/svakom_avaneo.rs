@@ -12,7 +12,7 @@ use crate::{
     message::{ActuatorType, Endpoint},
   },
   server::device::{
-    configuration::ProtocolAttributesType,
+    configuration::UserDeviceIdentifier,
     hardware::{Hardware, HardwareCommand, HardwareWriteCmd},
     protocol::{
       generic_protocol_initializer_setup,
@@ -20,7 +20,6 @@ use crate::{
       ProtocolIdentifier,
       ProtocolInitializer,
     },
-    ServerDeviceIdentifier,
   },
   util::{async_manager, sleep},
 };

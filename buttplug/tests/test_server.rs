@@ -1,17 +1,20 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
 
 mod util;
+use util::test_server;
 pub use util::{
+  create_test_dcm,
   test_device_manager::{
     check_test_recv_value,
     TestDeviceCommunicationManagerBuilder,
     TestDeviceIdentifier,
   },
+  test_server_with_comm_manager,
   test_server_with_device,
 };
 
@@ -27,7 +30,10 @@ use buttplug::{
     },
   },
   server::{
-    device::hardware::{HardwareCommand, HardwareWriteCmd},
+    device::{
+      hardware::{HardwareCommand, HardwareWriteCmd},
+      ServerDeviceManagerBuilder,
+    },
     ButtplugServer,
     ButtplugServerBuilder,
   },
@@ -39,7 +45,7 @@ use tokio::time::sleep;
 async fn setup_test_server(
   msg_union: message::ButtplugClientMessage,
 ) -> (ButtplugServer, impl Stream<Item = ButtplugServerMessage>) {
-  let server = ButtplugServer::default();
+  let server = test_server(false);
   let recv = server.event_stream();
   // assert_eq!(server.server_name, "Test Server");
   match server
@@ -67,7 +73,7 @@ async fn test_server_handshake() {
 #[tokio::test]
 async fn test_server_handshake_not_done_first() {
   let msg = message::Ping::default().into();
-  let server = ButtplugServer::default();
+  let server = test_server(false);
   // assert_eq!(server.server_name, "Test Server");
   let result = server.parse_message(msg).await;
   assert!(result.is_err());
@@ -82,7 +88,7 @@ async fn test_server_handshake_not_done_first() {
 async fn test_client_version_older_than_server() {
   let msg =
     message::RequestServerInfo::new("Test Client", ButtplugMessageSpecVersion::Version2).into();
-  let server = ButtplugServer::default();
+  let server = test_server(false);
   // assert_eq!(server.server_name, "Test Server");
   match server
     .parse_message(msg)
@@ -100,7 +106,7 @@ async fn test_client_version_older_than_server() {
 #[tokio::test]
 #[ignore = "Needs to be rewritten to send in via the JSON parser, otherwise we're type bound due to the enum and can't fail"]
 async fn test_server_version_older_than_client() {
-  let server = ButtplugServer::default();
+  let server = test_server(false);
   let msg =
     message::RequestServerInfo::new("Test Client", ButtplugMessageSpecVersion::Version2).into();
   assert!(
@@ -148,9 +154,13 @@ async fn test_device_stop_on_ping_timeout() {
   let mut builder = TestDeviceCommunicationManagerBuilder::default();
   let mut device = builder.add_test_device(&TestDeviceIdentifier::new("Massage Demo", None));
 
-  let mut server_builder = ButtplugServerBuilder::default();
+  let dm_builder = ServerDeviceManagerBuilder::new(create_test_dcm(false))
+    .comm_manager(builder)
+    .finish()
+    .unwrap();
+
+  let mut server_builder = ButtplugServerBuilder::new(dm_builder);
   server_builder.max_ping_time(100);
-  server_builder.comm_manager(builder);
   let server = server_builder.finish().unwrap();
 
   let recv = server.event_stream();
@@ -239,9 +249,7 @@ async fn test_device_index_generation() {
   let mut _device1 = builder.add_test_device(&TestDeviceIdentifier::new("Massage Demo", None));
   let mut _device2 = builder.add_test_device(&TestDeviceIdentifier::new("Massage Demo", None));
 
-  let mut server_builder = ButtplugServerBuilder::default();
-  server_builder.comm_manager(builder);
-  let server = server_builder.finish().unwrap();
+  let server = test_server_with_comm_manager(builder, false);
 
   let recv = server.event_stream();
   pin_mut!(recv);
@@ -286,9 +294,7 @@ async fn test_server_scanning_finished() {
   let mut _device1 = builder.add_test_device(&TestDeviceIdentifier::new("Massage Demo", None));
   let mut _device2 = builder.add_test_device(&TestDeviceIdentifier::new("Massage Demo", None));
 
-  let mut server_builder = ButtplugServerBuilder::default();
-  server_builder.comm_manager(builder);
-  let server = server_builder.finish().unwrap();
+  let server = test_server_with_comm_manager(builder, false);
 
   let recv = server.event_stream();
   pin_mut!(recv);
@@ -317,153 +323,6 @@ async fn test_server_scanning_finished() {
     }
   }
   assert!(finish_received);
-}
-
-#[tokio::test]
-async fn test_server_builder_null_device_config() {
-  let mut builder = ButtplugServerBuilder::default();
-  let _ = builder
-    .device_configuration_json(None)
-    .finish()
-    .expect("Test, assuming infallible.");
-}
-
-#[tokio::test]
-async fn test_server_builder_device_config_invalid_json() {
-  let mut builder = ButtplugServerBuilder::default();
-  assert!(builder
-    .device_configuration_json(Some("{\"Not Valid JSON\"}".to_owned()))
-    .finish()
-    .is_err());
-}
-
-#[tokio::test]
-async fn test_server_builder_device_config_schema_break() {
-  let mut builder = ButtplugServerBuilder::default();
-  // missing version block.
-  let device_json = r#"{
-      "protocols": {
-        "jejoue": {
-          "btle": {
-            "names": [
-              "Je Joue"
-            ],
-            "services": {
-              "0000fff0-0000-1000-8000-00805f9b34fb": {
-                "tx": "0000fff1-0000-1000-8000-00805f9b34fb"
-              }
-            }
-          },
-          "defaults": {
-            "name": {
-              "en-us": "Je Joue Device"
-            },
-            "messages": {
-              "VibrateCmd": {
-                "FeatureCount": 2,
-                "StepCount": [
-                  5,
-                  5
-                ]
-              }
-            }
-          }
-        },
-      }
-    }"#;
-  assert!(builder
-    .device_configuration_json(Some(device_json.to_owned()))
-    .finish()
-    .is_err());
-}
-
-#[tokio::test]
-async fn test_server_builder_device_config_old_config_version() {
-  let mut builder = ButtplugServerBuilder::default();
-  // missing version block.
-  let device_json = r#"{
-      "version": 0,
-      "protocols": {}
-    }
-    "#;
-  assert!(builder
-    .device_configuration_json(Some(device_json.to_owned()))
-    .finish()
-    .is_err());
-}
-
-#[tokio::test]
-async fn test_server_builder_null_user_device_config() {
-  let mut builder = ButtplugServerBuilder::default();
-  let _ = builder
-    .user_device_configuration_json(None)
-    .finish()
-    .expect("Test, assuming infallible.");
-}
-
-#[tokio::test]
-async fn test_server_builder_user_device_config_invalid_json() {
-  let mut builder = ButtplugServerBuilder::default();
-  assert!(builder
-    .user_device_configuration_json(Some("{\"Not Valid JSON\"}".to_owned()))
-    .finish()
-    .is_err());
-}
-
-#[tokio::test]
-async fn test_server_builder_user_device_config_schema_break() {
-  let mut builder = ButtplugServerBuilder::default();
-  // missing version block.
-  let device_json = r#"{
-      "protocols": {
-        "jejoue": {
-          "btle": {
-            "names": [
-              "Je Joue"
-            ],
-            "services": {
-              "0000fff0-0000-1000-8000-00805f9b34fb": {
-                "tx": "0000fff1-0000-1000-8000-00805f9b34fb"
-              }
-            }
-          },
-          "defaults": {
-            "name": {
-              "en-us": "Je Joue Device"
-            },
-            "messages": {
-              "VibrateCmd": {
-                "FeatureCount": 2,
-                "StepCount": [
-                  5,
-                  5
-                ]
-              }
-            }
-          }
-        },
-      }
-    }"#;
-  assert!(builder
-    .user_device_configuration_json(Some(device_json.to_owned()))
-    .finish()
-    .is_err());
-}
-
-#[tokio::test]
-#[ignore = "Skip until we've figured out whether we actually want version differences to fail."]
-async fn test_server_builder_user_device_config_old_config_version() {
-  let mut builder = ButtplugServerBuilder::default();
-  // missing version block.
-  let device_json = r#"{
-      "version": 0,
-      "protocols": {}
-    }
-    "#;
-  assert!(builder
-    .user_device_configuration_json(Some(device_json.to_owned()))
-    .finish()
-    .is_err());
 }
 
 // TODO Test sending system message (Id 0)

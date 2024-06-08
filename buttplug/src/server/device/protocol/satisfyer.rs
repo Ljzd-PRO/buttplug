@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -12,10 +12,9 @@ use crate::{
     message::{self, Endpoint},
   },
   server::device::{
-    configuration::ProtocolAttributesType,
+    configuration::UserDeviceIdentifier,
     hardware::{Hardware, HardwareCommand, HardwareReadCmd, HardwareWriteCmd},
     protocol::{ProtocolHandler, ProtocolIdentifier, ProtocolInitializer},
-    ServerDeviceIdentifier,
   },
   util::{async_manager, sleep},
 };
@@ -52,7 +51,7 @@ impl ProtocolIdentifier for SatisfyerIdentifier {
   async fn identify(
     &mut self,
     hardware: Arc<Hardware>,
-  ) -> Result<(ServerDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
+  ) -> Result<(UserDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
     let result = hardware
       .read_value(&HardwareReadCmd::new(Endpoint::RxBLEModel, 128, 500))
       .await?;
@@ -66,11 +65,7 @@ impl ProtocolIdentifier for SatisfyerIdentifier {
       device_identifier
     );
     return Ok((
-      ServerDeviceIdentifier::new(
-        hardware.address(),
-        "satisfyer",
-        &ProtocolAttributesType::Identifier(device_identifier),
-      ),
+      UserDeviceIdentifier::new(hardware.address(), "satisfyer", &Some(device_identifier)),
       Box::new(SatisfyerInitializer::default()),
     ));
   }
@@ -91,7 +86,7 @@ impl ProtocolInitializer for SatisfyerInitializer {
     info_fut.await?;
 
     let mut feature_count = 2; // fallback to 2
-    if let Some(attrs) = attributes.message_attributes.scalar_cmd() {
+    if let Some(attrs) = attributes.message_attributes().scalar_cmd() {
       feature_count = attrs.len();
     }
     Ok(Arc::new(Satisfyer::new(hardware, feature_count)))

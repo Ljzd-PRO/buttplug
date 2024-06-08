@@ -5,21 +5,20 @@
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
 
-use crate::core::message::ActuatorType;
-use crate::server::device::configuration::ProtocolDeviceAttributes;
-use crate::server::device::hardware::{HardwareEvent, HardwareSubscribeCmd};
 use crate::{
-  core::{errors::ButtplugDeviceError, message::Endpoint},
+  core::{
+    errors::ButtplugDeviceError,
+    message::{ActuatorType, Endpoint},
+  },
   server::device::{
-    configuration::ProtocolAttributesType,
-    hardware::{Hardware, HardwareCommand, HardwareWriteCmd},
+    configuration::{ProtocolDeviceAttributes, UserDeviceIdentifier},
+    hardware::{Hardware, HardwareCommand, HardwareEvent, HardwareSubscribeCmd, HardwareWriteCmd},
     protocol::{
       generic_protocol_initializer_setup,
       ProtocolHandler,
       ProtocolIdentifier,
       ProtocolInitializer,
     },
-    ServerDeviceIdentifier,
   },
 };
 use aes::Aes128;

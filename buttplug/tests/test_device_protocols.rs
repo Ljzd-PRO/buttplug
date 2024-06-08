@@ -1,7 +1,7 @@
 mod util;
 //use buttplug::util::async_manager;
 use test_case::test_case;
-use util::DeviceTestCase;
+use util::device_test::DeviceTestCase;
 
 async fn load_test_case(test_file: &str) -> DeviceTestCase {
   // Load the file list from the test cases directory
@@ -80,6 +80,7 @@ async fn load_test_case(test_file: &str) -> DeviceTestCase {
 #[test_case("test_metaxsire_nolan.yaml" ; "metaXsire Protocol v2 - Nolan")]
 #[test_case("test_cowgirl_protocol.yaml" ; "The Cowgirl Protocol")]
 #[test_case("test_galaku_nebula.yaml" ; "Galaku Pump Protocol - Nebula")]
+#[test_case("test_galaku.yaml" ; "Galaku Protocol")]
 #[test_case("test_xibao_protocol.yaml" ; "Xibao Protocol")]
 #[test_case("test_sensee_protocol.yaml" ; "Sensee Diandou Protocol - Rabbit")]
 #[test_case("test_sensee_capsule.yaml" ; "Sensee Capsule Protocol")]
@@ -91,13 +92,15 @@ async fn load_test_case(test_file: &str) -> DeviceTestCase {
 #[test_case("test_svakom_alex_v2.yaml" ; "Svakom Alex Neo 2")]
 #[test_case("test_svakom_iker.yaml" ; "Svakom Iker")]
 #[test_case("test_svakom_barnard.yaml" ; "Svakom (Fantasy Cup) Barnard")]
+#[test_case("test_svakom_mora_neo.yaml" ; "Svakom Mora Neo")]
 #[test_case("test_fox_protocol.yaml" ; "Fox Protocol")]
 #[test_case("test_sakuraneko_koikoi.yaml" ; "Sakuraneko Protocol - Koikoi")]
 #[test_case("test_xiuxiuda_protocol.yaml" ; "Xiuxiuda Protocol")]
 #[test_case("test_longlosttouch_protocol.yaml" ; "LongLostTouch Protocol")]
 #[test_case("test_adrienlastic_protocol.yaml" ; "Adrien Lastic Protocol")]
 #[test_case("test_foreo_protocol.yaml" ; "Foreo Protocol")]
-#[test_case("test_joyhub_protocol.yaml" ; "JoyHub Protocol")]
+#[test_case("test_joyhub_petalwish.yaml" ; "JoyHub Protocol - Petalwish")]
+#[test_case("test_joyhub_petalwish_compat.yaml" ; "JoyHub Protocol - Petalwish Compat")]
 #[test_case("test_itoys_protocol.yaml" ; "iToys Protocol")]
 #[test_case("test_leten_protocol.yaml" ; "Leten Protocol")]
 #[test_case("test_motorbunny_protocol.yaml" ; "Motorbunny Protocol")]
@@ -171,6 +174,7 @@ async fn test_device_protocols_embedded_v3(test_file: &str) {
 #[test_case("test_metaxsire_nolan.yaml" ; "metaXsire Protocol v2 - Nolan")]
 #[test_case("test_cowgirl_protocol.yaml" ; "The Cowgirl Protocol")]
 #[test_case("test_galaku_nebula.yaml" ; "Galaku Pump Protocol - Nebula")]
+#[test_case("test_galaku.yaml" ; "Galaku Protocol")]
 #[test_case("test_xibao_protocol.yaml" ; "Xibao Protocol")]
 #[test_case("test_sensee_protocol.yaml" ; "Sensee Diandou Protocol - Rabbit")]
 #[test_case("test_sensee_capsule.yaml" ; "Sensee Capsule Protocol")]
@@ -181,13 +185,15 @@ async fn test_device_protocols_embedded_v3(test_file: &str) {
 #[test_case("test_svakom_alex.yaml" ; "Svakom Alex Neo")]
 #[test_case("test_svakom_alex_v2.yaml" ; "Svakom Alex Neo 2")]
 #[test_case("test_svakom_barnard.yaml" ; "Svakom (Fantasy Cup) Barnard")]
+#[test_case("test_svakom_mora_neo.yaml" ; "Svakom Mora Neo")]
 #[test_case("test_svakom_iker.yaml" ; "Svakom Iker")]
 #[test_case("test_fox_protocol.yaml" ; "Fox Protocol")]
 #[test_case("test_sakuraneko_koikoi.yaml" ; "Sakuraneko Protocol - Koikoi")]
 #[test_case("test_xiuxiuda_protocol.yaml" ; "Xiuxiuda Protocol")]
 #[test_case("test_adrienlastic_protocol.yaml" ; "Adrien Lastic Protocol")]
 #[test_case("test_foreo_protocol.yaml" ; "Foreo Protocol")]
-#[test_case("test_joyhub_protocol.yaml" ; "JoyHub Protocol")]
+#[test_case("test_joyhub_petalwish.yaml" ; "JoyHub Protocol - Petalwish")]
+#[test_case("test_joyhub_petalwish_compat.yaml" ; "JoyHub Protocol - Petalwish Compat")]
 #[test_case("test_itoys_protocol.yaml" ; "iToys Protocol")]
 #[test_case("test_leten_protocol.yaml" ; "Leten Protocol")]
 #[test_case("test_motorbunny_protocol.yaml" ; "Motorbunny Protocol")]
@@ -254,6 +260,7 @@ async fn test_device_protocols_json_v3(test_file: &str) {
 #[test_case("test_xiuxiuda_protocol.yaml" ; "Xiuxiuda Protocol")]
 #[test_case("test_adrienlastic_protocol.yaml" ; "Adrien Lastic Protocol")]
 #[test_case("test_foreo_protocol.yaml" ; "Foreo Protocol")]
+#[test_case("test_joyhub_petalwish_compat.yaml" ; "JoyHub Protocol - Petalwish Compat")]
 #[test_case("test_itoys_protocol.yaml" ; "iToys Protocol")]
 #[test_case("test_leten_protocol.yaml" ; "Leten Protocol")]
 #[test_case("test_motorbunny_protocol.yaml" ; "Motorbunny Protocol")]
@@ -319,6 +326,7 @@ async fn test_device_protocols_embedded_v2(test_file: &str) {
 #[test_case("test_xiuxiuda_protocol.yaml" ; "Xiuxiuda Protocol")]
 #[test_case("test_adrienlastic_protocol.yaml" ; "Adrien Lastic Protocol")]
 #[test_case("test_foreo_protocol.yaml" ; "Foreo Protocol")]
+#[test_case("test_joyhub_petalwish_compat.yaml" ; "JoyHub Protocol - Petalwish Compat")]
 #[test_case("test_itoys_protocol.yaml" ; "iToys Protocol")]
 #[test_case("test_leten_protocol.yaml" ; "Leten Protocol")]
 #[test_case("test_motorbunny_protocol.yaml" ; "Motorbunny Protocol")]

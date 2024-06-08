@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -70,20 +70,5 @@ impl ButtplugMessageValidator for ScalarCmd {
       )?;
     }
     Ok(())
-  }
-}
-
-impl From<VibrateCmd> for ScalarCmd {
-  fn from(vibrate_cmd: VibrateCmd) -> Self {
-    let subcommands: Vec<ScalarSubcommand> = vibrate_cmd
-      .speeds()
-      .iter()
-      .map(|x| ScalarSubcommand::new(x.index(), x.speed(), ActuatorType::Vibrate))
-      .collect();
-    Self {
-      id: vibrate_cmd.id(),
-      device_index: vibrate_cmd.device_index(),
-      scalars: subcommands,
-    }
   }
 }

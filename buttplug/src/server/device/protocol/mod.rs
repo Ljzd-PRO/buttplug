@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -25,6 +25,7 @@ pub mod foreo;
 pub mod fox;
 pub mod fredorch;
 pub mod fredorch_rotary;
+pub mod galaku;
 pub mod galaku_pump;
 pub mod hgod;
 pub mod hismith;
@@ -66,6 +67,7 @@ pub mod metaxsire;
 pub mod metaxsire_repeat;
 pub mod metaxsire_v2;
 pub mod metaxsire_v3;
+mod metaxsire_v4;
 pub mod mizzzee;
 pub mod mizzzee_v2;
 pub mod mizzzee_v3;
@@ -99,6 +101,7 @@ pub mod svakom_tarax;
 pub mod svakom_v2;
 pub mod svakom_v3;
 pub mod svakom_v4;
+pub mod svakom_v5;
 pub mod synchro;
 pub mod tcode_v03;
 pub mod thehandy;
@@ -132,9 +135,8 @@ use crate::{
     },
   },
   server::device::{
-    configuration::{ProtocolAttributesType, ProtocolCommunicationSpecifier},
+    configuration::{ProtocolCommunicationSpecifier, UserDeviceIdentifier},
     hardware::{Hardware, HardwareCommand, HardwareReadCmd},
-    ServerDeviceIdentifier,
   },
 };
 use async_trait::async_trait;
@@ -259,6 +261,8 @@ pub fn get_default_protocol_map() -> HashMap<String, Arc<dyn ProtocolIdentifierF
     galaku_pump::setup::GalakuPumpIdentifierFactory::default(),
   );
 
+  add_to_protocol_map(&mut map, galaku::setup::GalakuIdentifierFactory::default());
+
   add_to_protocol_map(&mut map, itoys::setup::IToysIdentifierFactory::default());
   add_to_protocol_map(&mut map, jejoue::setup::JeJoueIdentifierFactory::default());
   add_to_protocol_map(&mut map, joyhub::setup::JoyHubIdentifierFactory::default());
@@ -371,6 +375,10 @@ pub fn get_default_protocol_map() -> HashMap<String, Arc<dyn ProtocolIdentifierF
   add_to_protocol_map(
     &mut map,
     metaxsire_v3::setup::MetaXSireV3IdentifierFactory::default(),
+  );
+  add_to_protocol_map(
+    &mut map,
+    metaxsire_v4::setup::MetaXSireV4IdentifierFactory::default(),
   );
   add_to_protocol_map(
     &mut map,
@@ -491,6 +499,10 @@ pub fn get_default_protocol_map() -> HashMap<String, Arc<dyn ProtocolIdentifierF
   );
   add_to_protocol_map(
     &mut map,
+    svakom_v5::setup::SvakomV5IdentifierFactory::default(),
+  );
+  add_to_protocol_map(
+    &mut map,
     synchro::setup::SynchroIdentifierFactory::default(),
   );
   add_to_protocol_map(&mut map, tryfun::setup::TryFunIdentifierFactory::default());
@@ -573,7 +585,7 @@ pub trait ProtocolIdentifier: Sync + Send {
   async fn identify(
     &mut self,
     hardware: Arc<Hardware>,
-  ) -> Result<(ServerDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError>;
+  ) -> Result<(UserDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError>;
 }
 
 #[async_trait]
@@ -604,11 +616,11 @@ impl ProtocolIdentifier for GenericProtocolIdentifier {
   async fn identify(
     &mut self,
     hardware: Arc<Hardware>,
-  ) -> Result<(ServerDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
-    let device_identifier = ServerDeviceIdentifier::new(
+  ) -> Result<(UserDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
+    let device_identifier = UserDeviceIdentifier::new(
       hardware.address(),
       &self.protocol_identifier,
-      &ProtocolAttributesType::Identifier(hardware.name().to_owned()),
+      &Some(hardware.name().to_owned()),
     );
     Ok((
       device_identifier,
@@ -928,8 +940,8 @@ macro_rules! generic_protocol_initializer_setup {
         async fn identify(
           &mut self,
           hardware: Arc<Hardware>,
-        ) -> Result<(ServerDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
-          Ok((ServerDeviceIdentifier::new(hardware.address(), $protocol_identifier, &ProtocolAttributesType::Identifier(hardware.name().to_owned())), Box::new([< $protocol_name Initializer >]::default())))
+        ) -> Result<(UserDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
+          Ok((UserDeviceIdentifier::new(hardware.address(), $protocol_identifier, &Some(hardware.name().to_owned())), Box::new([< $protocol_name Initializer >]::default())))
         }
       }
     }

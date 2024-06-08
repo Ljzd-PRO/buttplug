@@ -11,10 +11,10 @@ use crate::{
     message::{ActuatorType, Endpoint},
   },
   server::device::{
-    configuration::{ProtocolAttributesType, ProtocolDeviceAttributes},
+    configuration::ProtocolDeviceAttributes,
+    configuration::UserDeviceIdentifier,
     hardware::{Hardware, HardwareCommand, HardwareReadCmd, HardwareWriteCmd},
     protocol::{ProtocolHandler, ProtocolIdentifier, ProtocolInitializer},
-    ServerDeviceIdentifier,
   },
 };
 use async_trait::async_trait;
@@ -44,7 +44,7 @@ impl ProtocolIdentifier for MonsterPubIdentifier {
   async fn identify(
     &mut self,
     hardware: Arc<Hardware>,
-  ) -> Result<(ServerDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
+  ) -> Result<(UserDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
     let read_resp = hardware
       .read_value(&HardwareReadCmd::new(Endpoint::RxBLEModel, 32, 500))
       .await;
@@ -61,11 +61,7 @@ impl ProtocolIdentifier for MonsterPubIdentifier {
       Err(_) => "Unknown".to_string(),
     };
     return Ok((
-      ServerDeviceIdentifier::new(
-        hardware.address(),
-        "monsterpub",
-        &ProtocolAttributesType::Identifier(ident),
-      ),
+      UserDeviceIdentifier::new(hardware.address(), "monsterpub", &Some(ident)),
       Box::new(MonsterPubInitializer::default()),
     ));
   }

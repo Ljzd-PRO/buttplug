@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -199,10 +199,7 @@ impl WebsocketServerHardwareConnector {
 #[async_trait]
 impl HardwareConnector for WebsocketServerHardwareConnector {
   fn specifier(&self) -> ProtocolCommunicationSpecifier {
-    ProtocolCommunicationSpecifier::Websocket(WebsocketSpecifier::new(&vec![self
-      .info
-      .identifier()
-      .to_owned()]))
+    ProtocolCommunicationSpecifier::Websocket(WebsocketSpecifier::new(self.info.identifier()))
   }
 
   async fn connect(&mut self) -> Result<Box<dyn HardwareSpecializer>, ButtplugDeviceError> {

@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -12,10 +12,9 @@ use crate::{
     message::{ActuatorType, Endpoint},
   },
   server::device::{
-    configuration::ProtocolAttributesType,
+    configuration::UserDeviceIdentifier,
     hardware::{Hardware, HardwareCommand, HardwareWriteCmd},
     protocol::{ProtocolHandler, ProtocolIdentifier, ProtocolInitializer},
-    ServerDeviceIdentifier,
   },
 };
 use async_trait::async_trait;
@@ -45,7 +44,7 @@ impl ProtocolIdentifier for PatooIdentifier {
   async fn identify(
     &mut self,
     hardware: Arc<Hardware>,
-  ) -> Result<(ServerDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
+  ) -> Result<(UserDeviceIdentifier, Box<dyn ProtocolInitializer>), ButtplugDeviceError> {
     // Patoo Love devices have wildcarded names of ([A-Z]+)\d*
     // Force the identifier lookup to the non-numeric portion
     let c: Vec<char> = hardware.name().chars().collect();
@@ -55,11 +54,7 @@ impl ProtocolIdentifier for PatooIdentifier {
     }
     let name: String = c[0..i].iter().collect();
     Ok((
-      ServerDeviceIdentifier::new(
-        hardware.address(),
-        "Patoo",
-        &ProtocolAttributesType::Identifier(name),
-      ),
+      UserDeviceIdentifier::new(hardware.address(), "Patoo", &Some(name)),
       Box::new(PatooInitializer::default()),
     ))
   }

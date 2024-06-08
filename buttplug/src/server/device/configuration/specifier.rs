@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -256,26 +256,46 @@ impl PartialEq for XInputSpecifier {
   }
 }
 
-/// Specifier for HID (USB, Bluetooth) devices
-///
-/// Handles devices managed by the operating system's HID manager.
 #[derive(
   Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Getters, Setters, MutGetters,
 )]
-#[getset(get = "pub", set = "pub", get_mut = "pub(crate)")]
-pub struct HIDSpecifier {
+pub struct VIDPIDPair {
   #[serde(rename = "vendor-id")]
   vendor_id: u16,
   #[serde(rename = "product-id")]
   product_id: u16,
 }
 
-impl HIDSpecifier {
+/// Specifier for HID (USB, Bluetooth) devices
+///
+/// Handles devices managed by the operating system's HID manager.
+#[derive(Serialize, Deserialize, Debug, Eq, Clone, Getters, Setters, MutGetters)]
+#[getset(get = "pub", set = "pub", get_mut = "pub(crate)")]
+pub struct VIDPIDSpecifier {
+  pairs: Vec<VIDPIDPair>,
+}
+
+impl VIDPIDSpecifier {
   pub fn new(vendor_id: u16, product_id: u16) -> Self {
     Self {
-      vendor_id,
-      product_id,
+      pairs: vec![VIDPIDPair {
+        vendor_id,
+        product_id,
+      }],
     }
+  }
+}
+
+impl PartialEq for VIDPIDSpecifier {
+  fn eq(&self, other: &Self) -> bool {
+    for pair in &self.pairs {
+      for other_pair in &other.pairs {
+        if *pair == *other_pair {
+          return true;
+        }
+      }
+    }
+    false
   }
 }
 
@@ -296,10 +316,20 @@ pub struct SerialSpecifier {
 }
 
 impl SerialSpecifier {
+  pub fn new(port: &str, baud_rate: u32, data_bits: u8, stop_bits: u8, parity: char) -> Self {
+    Self {
+      port: port.to_owned(),
+      baud_rate,
+      data_bits,
+      stop_bits,
+      parity,
+    }
+  }
+
   /// Given a serial port name (the only identifier we have for this type of device), create a
   /// specifier instance.
   pub fn new_from_name(port: &str) -> Self {
-    SerialSpecifier {
+    Self {
       port: port.to_owned(),
       ..Default::default()
     }
@@ -308,20 +338,11 @@ impl SerialSpecifier {
 
 impl PartialEq for SerialSpecifier {
   fn eq(&self, other: &Self) -> bool {
-    self.port == other.port
+    if *self.port == *other.port {
+      return true;
+    }
+    false
   }
-}
-
-/// Specifier for USB devices
-#[derive(
-  Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Getters, Setters, MutGetters,
-)]
-#[getset(get = "pub", set = "pub", get_mut = "pub(crate)")]
-pub struct USBSpecifier {
-  #[serde(rename = "vendor-id")]
-  vendor_id: u16,
-  #[serde(rename = "product-id")]
-  product_id: u16,
 }
 
 /// Specifier for Websocket Device Manager devices
@@ -331,19 +352,12 @@ pub struct USBSpecifier {
 #[derive(Serialize, Deserialize, Debug, Clone, Default, Getters, Setters, MutGetters)]
 #[getset(get = "pub", set = "pub")]
 pub struct WebsocketSpecifier {
-  names: HashSet<String>,
-}
-
-impl WebsocketSpecifier {
-  pub fn merge(&mut self, other: WebsocketSpecifier) {
-    // Just add the new identifier names
-    self.names.extend(other.names);
-  }
+  name: String,
 }
 
 impl PartialEq for WebsocketSpecifier {
   fn eq(&self, other: &Self) -> bool {
-    if self.names.intersection(&other.names).count() > 0 {
+    if self.name == other.name {
       return true;
     }
     false
@@ -351,12 +365,10 @@ impl PartialEq for WebsocketSpecifier {
 }
 
 impl WebsocketSpecifier {
-  pub fn new(names: &Vec<String>) -> WebsocketSpecifier {
-    let mut set = HashSet::new();
-    for name in names {
-      set.insert(name.clone());
+  pub fn new(name: &str) -> WebsocketSpecifier {
+    Self {
+      name: name.to_owned(),
     }
-    WebsocketSpecifier { names: set }
   }
 }
 
@@ -366,12 +378,19 @@ impl WebsocketSpecifier {
 /// devices against the list of known devices for a protocol.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ProtocolCommunicationSpecifier {
+  #[serde(rename = "btle")]
   BluetoothLE(BluetoothLESpecifier),
-  HID(HIDSpecifier),
-  USB(USBSpecifier),
+  #[serde(rename = "hid")]
+  HID(VIDPIDSpecifier),
+  #[serde(rename = "usb")]
+  USB(VIDPIDSpecifier),
+  #[serde(rename = "serial")]
   Serial(SerialSpecifier),
+  #[serde(rename = "xinput")]
   XInput(XInputSpecifier),
+  #[serde(rename = "lovense-connect-service")]
   LovenseConnectService(LovenseConnectServiceSpecifier),
+  #[serde(rename = "websocket")]
   Websocket(WebsocketSpecifier),
 }
 

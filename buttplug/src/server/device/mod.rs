@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -102,5 +102,5 @@ pub mod server_device;
 mod server_device_manager;
 mod server_device_manager_event_loop;
 
-pub use server_device::{ServerDevice, ServerDeviceEvent, ServerDeviceIdentifier};
+pub use server_device::{ServerDevice, ServerDeviceEvent};
 pub use server_device_manager::{ServerDeviceManager, ServerDeviceManagerBuilder};

@@ -1,6 +1,6 @@
 // Buttplug Rust Source Code File - See https://buttplug.io for more info.
 //
-// Copyright 2016-2022 Nonpolynomial Labs LLC. All rights reserved.
+// Copyright 2016-2024 Nonpolynomial Labs LLC. All rights reserved.
 //
 // Licensed under the BSD 3-Clause license. See LICENSE file in the project root
 // for full license information.
@@ -165,9 +165,7 @@ impl ButtplugConnector<ButtplugSpecV2ClientMessage, ButtplugSpecV2ServerMessage>
     if !self.connected.load(Ordering::SeqCst) {
       return ButtplugConnectorError::ConnectorNotConnected.into();
     }
-    let input = msg
-      .try_into()
-      .expect("This is in-process so message conversions will always work.");
+    let input = msg.into();
     let output_fut = self.server.parse_message(input);
     let sender = self.server_outbound_sender.clone();
     async move {

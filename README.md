@@ -18,8 +18,10 @@
 
 - [buttplug/src/server/device/protocol/dg_lab_v2.rs](buttplug/src/server/device/protocol/dg_lab_v2.rs)
 - [buttplug/src/server/device/protocol/dg_lab_v2.rs](buttplug/src/server/device/protocol/dg_lab_v3.rs)
-- [buttplug/buttplug-device-config/buttplug-device-config.json](buttplug/buttplug-device-config/buttplug-device-config.json)
-- [buttplug/buttplug-device-config/buttplug-device-config.yml](buttplug/buttplug-device-config/buttplug-device-config.yml)
+- [buttplug/buttplug-device-config/build-config/buttplug-device-config-v2.json](buttplug/buttplug-device-config/build-config/buttplug-device-config-v2.json)
+- [buttplug/buttplug-device-config/device-config-v2/buttplug-device-config-v2.yml](buttplug/buttplug-device-config/device-config-v2/buttplug-device-config-v2.yml)
+- [buttplug/buttplug-device-config/build-config/buttplug-device-config-v3.json](buttplug/buttplug-device-config/build-config/buttplug-device-config-v3.json)
+- [buttplug/buttplug-device-config/device-config-v3/buttplug-device-config-v3.yml](buttplug/buttplug-device-config/device-config-v3/buttplug-device-config-v3.yml)
 
 # Buttplug
 [![Patreon donate button](https://img.shields.io/badge/patreon-donate-yellow.svg)](https://www.patreon.com/qdot)
